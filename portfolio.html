@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liu Yongjian — Visual Designer</title>
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:'Inter','Helvetica Neue','PingFang SC','Microsoft YaHei',sans-serif;
+  background:#fff;color:#0a0a0a;line-height:1.7;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+/* ===== CUSTOM CURSOR ===== */
+body{cursor:none}
+#cursor-dot,#cursor-ring{position:fixed;top:0;left:0;z-index:9999;pointer-events:none;will-change:transform;transform:translate(-50%,-50%)}
+#cursor-dot{width:6px;height:6px;background:#fff;border-radius:50%;mix-blend-mode:difference}
+#cursor-ring{width:28px;height:28px;border:1.5px solid rgba(255,255,255,0.45);border-radius:50%;mix-blend-mode:difference;transition:width .25s ease,height .25s ease,border-color .25s ease,border-width .25s ease}
+#cursor-ring.hover{width:44px;height:44px;border-color:rgba(0,204,106,0.7);border-width:2px}
+/* In edit mode, show system cursor on editable areas */
+body.edit-mode,body.edit-mode *{cursor:auto!important}
+body.edit-mode #cursor-dot,body.edit-mode #cursor-ring{display:none!important}
+body.edit-mode #spotlight{display:none!important}
+/* ===== SPOTLIGHT — enhanced for dark backgrounds ===== */
+#spotlight{
+  position:fixed;top:0;left:0;z-index:9998;pointer-events:none;
+  width:620px;height:620px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,0.42) 0%,rgba(255,255,255,0.18) 22%,rgba(255,255,255,0.05) 45%,transparent 68%);
+  transform:translate(-50%,-50%);will-change:left,top;
+  mix-blend-mode:soft-light;
+}
+@media(hover:none){#spotlight{display:none!important}}
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:#eee}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#00cc6a,#009944);border-radius:2px}
+/* ===== NAV ===== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:1.4rem 4vw;display:flex;justify-content:space-between;align-items:center;
+  background:rgba(255,255,255,0.94);backdrop-filter:blur(16px);
+  transition:box-shadow 0.4s ease;
+}
+nav.scrolled{box-shadow:0 1px 0 rgba(0,0,0,0.06)}
+.nav-logo{font-weight:900;font-size:1.1rem;letter-spacing:-0.02em;color:#0a0a0a;text-decoration:none}
+.nav-links{display:flex;gap:2.2rem;list-style:none}
+.nav-links a{text-decoration:none;color:#777;font-size:0.82rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;transition:color 0.25s}
+.nav-links a:hover{color:#00cc6a}
+/* ===== SECTION COMMON ===== */
+section{padding:8rem 4vw}
+.section-label{font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#aaa;margin-bottom:0.8rem}
+/* ===== HERO (Video Background) ===== */
+#hero{
+  position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:#0a0a0a;overflow:hidden;
+}
+#hero-video{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;
+}
+#aurora-canvas{position:absolute;inset:0;z-index:1;opacity:0.55}
+#hero-frost{
+  position:absolute;inset:0;z-index:2;
+  backdrop-filter:blur(16px) saturate(0.7);
+  -webkit-backdrop-filter:blur(16px) saturate(0.7);
+  background:rgba(0,0,0,0.3);
+}
+.hero-content{position:relative;z-index:3;text-align:center}
+.hero-name{
+  font-size:clamp(3.5rem,11vw,10rem);font-weight:900;letter-spacing:-0.04em;
+  color:#fff;line-height:0.9;margin-bottom:1rem;
+  opacity:0;transform:translateY(60px) scale(0.9);
+  animation:heroPopIn 0.8s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+.hero-title{
+  font-size:clamp(0.95rem,1.8vw,1.25rem);font-weight:500;color:rgba(255,255,255,0.55);
+  letter-spacing:0.08em;text-transform:uppercase;
+  opacity:0;transform:translateY(60px) scale(0.9);
+  animation:heroPopIn 0.8s cubic-bezier(0.175,0.885,0.32,1.275) 0.2s forwards;
+}
+@keyframes heroPopIn{
+  0%{opacity:0;transform:translateY(60px) scale(0.9)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+.hero-scroll{
+  position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:0.5rem;
+}
+.hero-scroll span{font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.3)}
+.hero-scroll-line{width:1px;height:36px;background:rgba(255,255,255,0.12);animation:scrollPulse 2.2s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{opacity:0.15}50%{opacity:0.65}}
+/* ===== ABOUT ===== */
+#about{background:#fff;padding:10rem 4vw}
+.about-grid{max-width:680px;margin:0 auto}
+.about-grid h2{font-size:clamp(1.8rem,3.6vw,2.8rem);font-weight:900;letter-spacing:-0.03em;line-height:1.18;margin-bottom:1.5rem}
+.about-grid p{font-size:1.05rem;color:#444;line-height:1.85;margin-bottom:1.2rem}
+.about-stats{display:flex;gap:4rem;margin-top:3rem;padding-top:2rem;border-top:1px solid #e8e8e8}
+.about-stat{text-align:center}
+.about-stat-num{font-size:2.6rem;font-weight:900;letter-spacing:-0.03em;color:#0a0a0a;line-height:1}
+.about-stat-label{font-size:0.78rem;color:#999;margin-top:0.35rem;letter-spacing:0.05em;text-transform:uppercase}
+/* ===== SKILLS ===== */
+#skills{background:#f7f7f7;padding:8rem 4vw}
+.skills-header{text-align:center;margin-bottom:4.5rem}
+.skills-header h2{font-size:clamp(1.8rem,3.6vw,2.8rem);font-weight:900;letter-spacing:-0.03em}
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1.1rem;max-width:960px;margin:0 auto}
+.skill-card{
+  background:#fff;padding:1.8rem 1rem;text-align:center;border-radius:2px;
+  transition:transform 0.35s ease,box-shadow 0.35s ease;
+}
+.skill-card:hover{transform:scale(1.04);box-shadow:0 10px 35px rgba(0,0,0,0.06)}
+.skill-icon{width:42px;height:42px;margin:0 auto 0.9rem}
+.skill-icon svg{width:100%;height:100%}
+.skill-img-icon{width:42px;height:42px;object-fit:contain;display:block}
+.skill-name{font-weight:800;font-size:0.92rem;letter-spacing:-0.01em}
+.skill-level{font-size:0.7rem;color:#aaa;margin-top:0.25rem;letter-spacing:0.05em;text-transform:uppercase}
+/* skill edit controls */
+.skill-card{position:relative}
+.skill-card .skill-btn-del{position:absolute;top:6px;right:6px;width:22px;height:22px;border:none;background:rgba(0,0,0,0.06);color:#999;border-radius:50%;font-size:14px;line-height:22px;cursor:pointer;display:none;z-index:2}
+.edit-mode .skill-card .skill-btn-del{display:block}
+.skill-card .skill-btn-del:hover{background:#e74c3c;color:#fff}
+.skill-card-add{border:2px dashed #ddd;background:transparent;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer;transition:border-color 0.3s,background 0.3s}
+.skill-card-add:hover{border-color:#00cc6a;background:rgba(0,204,106,0.03)}
+.skill-add-placeholder{text-align:center;color:#bbb}
+.skill-add-icon{display:block;font-size:2rem;font-weight:300;line-height:1}
+.skill-add-text{font-size:0.78rem;margin-top:0.4rem}
+/* ===== EXPERIENCE ===== */
+#experience{background:#fff;padding:8rem 4vw}
+.exp-header{text-align:center;margin-bottom:4.5rem}
+.exp-header h2{font-size:clamp(1.8rem,3.6vw,2.8rem);font-weight:900;letter-spacing:-0.03em}
+.exp-cards{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:1.1rem}
+.exp-card{border:1px solid #e8e8e8;border-radius:2px;overflow:hidden;cursor:pointer;transition:border-color 0.3s}
+.exp-card:hover{border-color:#ccc}
+.exp-card-header{padding:1.7rem 2rem;display:flex;align-items:center;gap:1rem}
+.exp-logo{width:80px;height:80px;object-fit:contain;flex-shrink:0;border-radius:2px;background:#f8f8f8;padding:8px}
+.exp-card-header h3{font-weight:800;font-size:1.1rem;letter-spacing:-0.01em}
+.exp-card-header .exp-role{font-size:0.85rem;color:#666;font-weight:500}
+.exp-card-header .exp-date{font-size:0.76rem;color:#aaa;margin-top:0.2rem}
+.exp-card-body{max-height:0;overflow:hidden;transition:max-height 0.5s ease,padding 0.5s ease}
+.exp-card-body.open{max-height:600px}
+.exp-card-body-inner{padding:0 2rem 1.8rem}
+.exp-card-body-inner ul{list-style:none}
+.exp-card-body-inner li{font-size:0.93rem;color:#555;line-height:1.75;position:relative;padding-left:1rem;margin-bottom:0.45rem}
+.exp-card-body-inner li::before{content:'—';position:absolute;left:0;color:#00cc6a;font-weight:700}
+.exp-arrow{font-size:1.1rem;transition:transform 0.35s ease;color:#aaa;margin-left:auto;flex-shrink:0}
+.exp-card.open .exp-arrow{transform:rotate(180deg)}
+/* ===== MARQUEE ===== */
+.marquee-section{background:#0d0d0d;padding:6rem 0;overflow:hidden;position:relative}
+#marquee-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#marquee-frost{position:absolute;inset:0;z-index:1;backdrop-filter:blur(16px) saturate(0.7);-webkit-backdrop-filter:blur(16px) saturate(0.7);background:rgba(0,0,0,0.35)}
+.marquee-section .section-label{position:relative;z-index:2;text-align:center;margin-bottom:0.3rem;color:#555}
+.marquee-section h3{position:relative;z-index:2;text-align:center;font-size:1.9rem;font-weight:900;letter-spacing:-0.02em;color:#fff;margin-bottom:2.5rem}
+.marquee-track{position:relative;z-index:2;display:flex;width:max-content;animation:marquee 120s linear infinite}
+.marquee-track:hover{animation-play-state:paused}
+.marquee-track img{height:220px;object-fit:cover;margin-right:5px;transition:transform 0.35s ease}
+.marquee-track img:hover{transform:scale(1.05)}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* ===== WORKS ===== */
+#works{background:#111;padding:8rem 4vw;position:relative;overflow:hidden}
+#works-aurora-canvas{position:absolute;inset:0;z-index:0;width:100%;height:100%;pointer-events:none}
+.works-header,.works-cats,.works-grid{position:relative;z-index:1}
+.works-header{text-align:center;margin-bottom:4.5rem}
+.works-header h2{font-size:clamp(1.8rem,3.6vw,2.8rem);font-weight:900;letter-spacing:-0.03em;color:#fff}
+.works-header .section-label{color:#555}
+/* Works Panels — Accordion */
+.works-panels{position:relative;z-index:1;max-width:1300px;margin:0 auto}
+.works-panel{margin-bottom:0;border-bottom:1px solid #1a1a1a;transition:border-color 0.35s}
+.works-panel:first-child{border-top:1px solid #1a1a1a}
+.works-panel.expanded{border-color:#333}
+.works-panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.3rem 0.5rem;cursor:pointer;user-select:none;
+  transition:padding 0.35s ease,background 0.3s;
+}
+.works-panel-header:hover{background:rgba(255,255,255,0.02)}
+.works-panel.expanded .works-panel-header{padding-bottom:0.9rem}
+.works-panel-header-left{display:flex;align-items:center;gap:0.85rem}
+.works-panel-dot{
+  width:6px;height:6px;border-radius:50%;background:#333;
+  transition:background 0.35s,transform 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.works-panel.expanded .works-panel-dot{background:#00cc6a;transform:scale(1.5)}
+.works-panel-header:hover .works-panel-dot{background:#666}
+.works-panel.expanded .works-panel-header:hover .works-panel-dot{background:#00cc6a}
+.works-panel-cat-name{
+  font-size:0.95rem;font-weight:700;color:#999;
+  letter-spacing:0.03em;transition:color 0.35s;
+}
+.works-panel-header:hover .works-panel-cat-name{color:#ddd}
+.works-panel.expanded .works-panel-cat-name{color:#00cc6a}
+.works-panel-header-right{display:flex;align-items:center;gap:0.8rem}
+.works-panel-count{
+  font-size:0.72rem;color:#555;font-weight:600;letter-spacing:0.06em;
+  transition:color 0.35s;
+}
+.works-panel.expanded .works-panel-count{color:#666}
+.works-panel-chevron{
+  width:16px;height:16px;opacity:0.4;
+  transition:opacity 0.3s,transform 0.45s cubic-bezier(0.4,0,0.2,1);
+}
+.works-panel-header:hover .works-panel-chevron{opacity:0.7}
+.works-panel.expanded .works-panel-chevron{opacity:0.8;transform:rotate(180deg)}
+.works-panel-body{
+  display:grid;grid-template-rows:0fr;
+  transition:grid-template-rows 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.works-panel.expanded .works-panel-body{grid-template-rows:1fr}
+.works-panel-body-inner{overflow:hidden}
+.works-panel-body-inner>div{padding:0 0.5rem 1.6rem}
+.works-panel-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.4rem;
+}
+
+/* Panel drag handle (edit mode) */
+.panel-drag-handle{
+  display:none;width:16px;height:16px;cursor:grab;opacity:0;flex-shrink:0;
+  transition:opacity 0.25s;margin-right:0.15rem;
+}
+body.edit-mode .panel-drag-handle{display:flex;opacity:0.3}
+.works-panel-header:hover .panel-drag-handle{opacity:0.6}
+.panel-drag-handle:active{cursor:grabbing}
+.panel-drag-handle svg{width:100%;height:100%;pointer-events:none}
+
+/* Panel dragging states */
+.works-panel.panel-dragging{opacity:0.2;background:rgba(0,204,106,0.04)}
+.works-panel.panel-drag-over{border-top:2px solid #00cc6a!important}
+
+/* Add category button */
+.panel-add-btn{
+  display:none;margin-top:1.6rem;padding:0.8rem;width:100%;
+  border:2px dashed #222;border-radius:2px;background:transparent;
+  color:#555;font-size:0.78rem;font-weight:600;letter-spacing:0.06em;
+  cursor:pointer;text-transform:uppercase;transition:all 0.25s;
+  font-family:inherit;
+}
+body.edit-mode .panel-add-btn{display:block}
+.panel-add-btn:hover{border-color:#00cc6a;color:#00cc6a;background:rgba(0,204,106,0.04)}
+
+.works-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.4rem;max-width:1300px;margin:0 auto}
+.work-item{
+  position:relative;overflow:hidden;border-radius:2px;cursor:pointer;
+  background:#1a1a1a;transition:transform 0.4s ease,box-shadow 0.4s ease;
+}
+.work-item:hover{transform:scale(1.02);box-shadow:0 20px 50px rgba(0,0,0,0.45)}
+body.edit-mode .work-item{cursor:grab}
+body.edit-mode .work-item:active{cursor:grabbing}
+.work-item.drag-over{border:2px solid #00cc6a;box-shadow:0 0 20px rgba(0,204,106,0.35)}
+.work-item.dragging{opacity:0.4}
+.work-img-wrap{aspect-ratio:4/3;overflow:hidden;background:#222}
+.work-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform 0.55s ease}
+.work-item:hover .work-img-wrap img{transform:scale(1.07)}
+.work-info{padding:1.1rem 1.2rem}
+.work-info h4{font-weight:800;font-size:0.92rem;color:#fff;letter-spacing:-0.01em}
+.work-tags{display:flex;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap}
+.work-tag{font-size:0.68rem;padding:0.22rem 0.55rem;background:rgba(0,204,106,0.12);color:#00cc6a;border-radius:1px;letter-spacing:0.05em;text-transform:uppercase;font-weight:600}
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.93);
+  display:flex;align-items:center;justify-content:center;opacity:0;
+  pointer-events:none;transition:opacity 0.35s ease;
+}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal-content{position:relative;max-width:90vw;max-height:90vh}
+.modal-content img{max-width:90vw;max-height:85vh;object-fit:contain}
+.modal-close{position:absolute;top:-2.5rem;right:0;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;font-weight:300;line-height:1}
+.modal-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:1.6rem;width:42px;height:42px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.25s}
+.modal-nav:hover{background:rgba(255,255,255,0.22)}
+.modal-prev{left:-3.5rem}.modal-next{right:-3.5rem}
+/* ===== CONTACT ===== */
+#contact{background:#fff;padding:8rem 4vw}
+.contact-inner{max-width:480px;margin:0 auto;text-align:center}
+.contact-inner h2{font-size:clamp(1.8rem,3.6vw,2.8rem);font-weight:900;letter-spacing:-0.03em;margin-bottom:1rem}
+.contact-inner p{color:#666;font-size:1.02rem;margin-bottom:2rem}
+.contact-item{font-size:1.05rem;color:#444;margin-bottom:0.5rem}
+.contact-item a{color:#0a0a0a;text-decoration:none;font-weight:700;transition:color 0.25s}
+.contact-item a:hover{color:#00cc6a}
+.contact-cta{display:inline-block;margin-top:2rem;padding:0.85rem 2.4rem;background:#0a0a0a;color:#fff;text-decoration:none;font-weight:800;font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;border-radius:2px;transition:background 0.3s,transform 0.3s}
+.contact-cta:hover{background:#00cc6a;color:#0a0a0a;transform:translateY(-2px)}
+/* ===== FOOTER ===== */
+footer{background:#f7f7f7;padding:2rem 4vw;text-align:center}
+footer p{font-size:0.75rem;color:#aaa}
+/* ===== EDIT MODE BUTTON ===== */
+#edit-toggle{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:3000;
+  width:38px;height:38px;border-radius:50%;background:#0a0a0a;color:#fff;
+  border:none;font-size:0.7rem;font-weight:700;letter-spacing:0.04em;cursor:pointer;
+  opacity:0.35;transition:opacity 0.3s,background 0.3s,transform 0.3s;
+  display:flex;align-items:center;justify-content:center;
+}
+#edit-toggle:hover{opacity:0.85;transform:scale(1.1)}
+#edit-toggle.active{background:#00cc6a;color:#0a0a0a;opacity:0.85}
+/* ===== EXPORT BUTTON ===== */
+#export-btn{
+  position:fixed;bottom:1.5rem;right:4.5rem;z-index:3000;
+  height:38px;padding:0 0.9rem;border-radius:19px;background:#0a0a0a;color:#fff;
+  border:none;font-size:0.7rem;font-weight:700;letter-spacing:0.04em;cursor:pointer;
+  opacity:0.35;transition:opacity 0.3s,background 0.3s;
+  display:flex;align-items:center;justify-content:center;gap:0.3rem;
+}
+#export-btn:hover{opacity:0.85;background:#00cc6a;color:#0a0a0a}
+/* Editable highlight in edit mode */
+body.edit-mode [contenteditable="true"]{outline:1px dashed rgba(0,204,106,0.4);outline-offset:3px;border-radius:2px}
+body.edit-mode [contenteditable="true"]:hover{outline-color:rgba(0,204,106,0.7)}
+body.edit-mode .edit-hint{display:block!important}
+.edit-hint{display:none;font-size:0.65rem;color:#00cc6a;margin-top:0.3rem;letter-spacing:0.04em;text-transform:uppercase}
+
+/* ===== EDIT MODE: Works Grid Controls ===== */
+body.edit-mode .work-img-wrap{position:relative}
+/* Remove old ::after pseudo */
+/* Delete button — top-right of work-item */
+.work-btn-del{
+  display:none;position:absolute;top:8px;right:8px;z-index:10;
+  width:30px;height:30px;border-radius:50%;background:#e53935;color:#fff;
+  border:none;font-size:1rem;font-weight:700;cursor:pointer;
+  align-items:center;justify-content:center;line-height:1;
+  transition:transform 0.2s,background 0.2s;
+}
+body.edit-mode .work-btn-del{display:flex}
+.work-btn-del:hover{transform:scale(1.15);background:#c62828}
+
+/* Replace button — bottom-right of work-img-wrap */
+.work-btn-replace{
+  display:none;position:absolute;bottom:8px;right:8px;z-index:10;
+  width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.55);color:#fff;
+  border:none;cursor:pointer;align-items:center;justify-content:center;
+  transition:transform 0.2s,background 0.2s;
+}
+body.edit-mode .work-btn-replace{display:flex}
+.work-btn-replace:hover{transform:scale(1.15);background:rgba(0,204,106,0.75)}
+
+/* Add work placeholder card */
+.work-item-add{cursor:pointer!important;border:2px dashed #444!important;background:transparent!important}
+.work-item-add:hover{border-color:#00cc6a!important}
+.add-work-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  aspect-ratio:4/3;color:#666;gap:0.5rem;
+}
+.add-work-icon{font-size:2.4rem;font-weight:300;line-height:1;color:#555}
+.add-work-text{font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase}
+
+/* ===== EDIT MODE: Marquee Controls ===== */
+.marquee-edit-wrap{position:relative;display:inline-block;flex-shrink:0}
+.marquee-edit-controls{display:none;position:absolute;top:4px;right:4px;z-index:10;gap:4px}
+body.edit-mode .marquee-edit-controls{display:flex}
+.marquee-btn{
+  width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;
+  font-size:0.9rem;font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform 0.2s;
+}
+.marquee-btn:hover{transform:scale(1.15)}
+.marquee-btn-del{background:rgba(229,57,53,0.85);color:#fff}
+.marquee-btn-replace{background:rgba(0,204,106,0.8);color:#0a0a0a}
+.marquee-add-btn{
+  cursor:pointer;display:inline-flex!important;align-items:center;justify-content:center;
+  width:160px;height:220px;border:2px dashed #444;flex-shrink:0;
+  transition:border-color 0.25s;
+}
+.marquee-add-btn:hover{border-color:#00cc6a}
+.marquee-add-placeholder{font-size:2.2rem;color:#555;font-weight:300}
+
+/* ===== ADD WORK FORM (inline) ===== */
+.add-work-form-overlay{
+  display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.75);
+  align-items:center;justify-content:center;
+}
+body.edit-mode .add-work-form-overlay.active{display:flex}
+.add-work-form{
+  background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:2rem;
+  width:360px;max-width:90vw;color:#fff;
+}
+.add-work-form h3{font-size:1rem;font-weight:800;margin-bottom:1.2rem;letter-spacing:-0.01em}
+.add-work-form label{display:block;font-size:0.72rem;color:#888;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em}
+.add-work-form select,.add-work-form input[type="text"]{
+  width:100%;padding:0.6rem 0.8rem;margin-bottom:1rem;background:#111;border:1px solid #333;
+  color:#fff;border-radius:2px;font-size:0.85rem;font-family:inherit;
+}
+.add-work-form select:focus,.add-work-form input:focus{outline:none;border-color:#00cc6a}
+.add-work-form .form-file-label{
+  display:inline-block;padding:0.55rem 1rem;background:#333;color:#ccc;border-radius:2px;
+  cursor:pointer;font-size:0.78rem;margin-bottom:1rem;transition:background 0.2s;
+}
+.add-work-form .form-file-label:hover{background:#00cc6a;color:#0a0a0a}
+.add-work-form .form-file-name{font-size:0.72rem;color:#777;margin-left:0.5rem}
+.add-work-form .form-actions{display:flex;gap:0.6rem;justify-content:flex-end;margin-top:0.5rem}
+.add-work-form .form-actions button{
+  padding:0.5rem 1.2rem;border:none;border-radius:2px;font-size:0.78rem;font-weight:700;
+  cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;
+}
+.form-btn-cancel{background:#333;color:#aaa}
+.form-btn-cancel:hover{background:#444}
+.form-btn-submit{background:#00cc6a;color:#0a0a0a}
+.form-btn-submit:hover{background:#00e676}
+/* ===== REVEAL ANIMATIONS ===== */
+.reveal{transform:translateY(28px);transition:opacity 0.7s ease,transform 0.7s ease}
+.reveal.visible{transform:translateY(0)}
+.reveal-d1{transition-delay:0.04s}.reveal-d2{transition-delay:0.08s}
+.reveal-d3{transition-delay:0.12s}.reveal-d4{transition-delay:0.16s}.reveal-d5{transition-delay:0.2s}
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  section{padding:5rem 1.5rem}
+  nav{padding:1rem 1.5rem}.nav-links{gap:1rem}.nav-links a{font-size:0.72rem}
+  .hero-name{font-size:clamp(2.5rem,13vw,5.5rem)}
+  #hero-frost{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  #spotlight{display:none!important}
+  .skills-grid{grid-template-columns:repeat(3,1fr);gap:0.7rem}
+  .works-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.7rem}
+  .marquee-track img{height:140px}
+  .about-stats{flex-direction:column;gap:1.5rem;align-items:center}
+  .modal-prev{left:-2rem}.modal-next{right:-2rem}
+}
+@media(max-width:480px){
+  .skills-grid{grid-template-columns:repeat(2,1fr)}
+  .works-grid{grid-template-columns:1fr}
+  .nav-links{gap:0.6rem}.nav-links a{font-size:0.66rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== CUSTOM CURSOR ===== -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- ===== SPOTLIGHT ===== -->
+<div id="spotlight"></div>
+
+<!-- ===== NAV ===== -->
+<nav id="nav">
+  <a href="#hero" class="nav-logo" id="logo-text">LIU YONGJIAN</a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#works">Works</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section id="hero">
+  <video id="hero-video" autoplay loop muted playsinline src="showreel.mp4"></video>
+  <canvas id="aurora-canvas"></canvas>
+  <div id="hero-frost"></div>
+  <div class="hero-content">
+    <h1 class="hero-name" data-config="name">刘永健</h1>
+    <p class="hero-title" data-config="title">Visual Designer &amp; Creative Thinker</p>
+  </div>
+  <div class="hero-scroll">
+    <span>Scroll</span>
+    <div class="hero-scroll-line"></div>
+  </div>
+</section>
+
+<!-- ===== ABOUT ===== -->
+<section id="about">
+  <div class="about-grid">
+    <span class="section-label">About</span>
+    <h2 class="reveal" data-config="aboutHeading">视觉传达设计专业，<br>用设计语言讲述品牌故事。</h2>
+    <p class="reveal reveal-d2" data-config="aboutP1">刘永健，23岁，毕业于河北环境工程学院视觉传达设计专业（专业排名前2%）。现居北京，专注于品牌视觉设计、动态设计与AIGC创作。</p>
+    <p class="reveal reveal-d3" data-config="aboutP2">曾在爱奇艺担任视觉设计师，参与头部影视项目视觉营销；后加入新东方教育科技集团，负责品牌视觉体系升级。擅长将商业诉求转化为富有叙事性的视觉表达。</p>
+    <div class="about-stats reveal reveal-d4">
+      <div class="about-stat"><div class="about-stat-num" data-config="stat1">2%</div><div class="about-stat-label">专业排名</div></div>
+      <div class="about-stat"><div class="about-stat-num" data-config="stat2">2+</div><div class="about-stat-label">年经验</div></div>
+      <div class="about-stat"><div class="about-stat-num" data-config="stat3">8</div><div class="about-stat-label">核心技能</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SKILLS ===== -->
+<section id="skills">
+  <div class="skills-header">
+    <span class="section-label">Skills</span>
+    <h2 class="reveal" data-config="skillsHeading">设计工具与技术</h2>
+  </div>
+  <div class="skills-grid" id="skillsGrid"></div>
+</section>
+
+<!-- ===== EXPERIENCE ===== -->
+<section id="experience">
+  <div class="exp-header">
+    <span class="section-label">Experience</span>
+    <h2 class="reveal" data-config="expHeading">工作经历</h2>
+  </div>
+  <div class="exp-cards" id="expCards"></div>
+</section>
+
+<!-- ===== MARQUEE ===== -->
+<div class="marquee-section">
+  <video id="marquee-video" autoplay loop muted playsinline src="marquee-bg.mp4"></video>
+  <div id="marquee-frost"></div>
+  <span class="section-label">Gallery</span>
+  <h3 class="reveal" data-config="marqueeHeading">活动实拍</h3>
+  <div class="marquee-track" id="marqueeTrack"></div>
+</div>
+
+<!-- ===== WORKS ===== -->
+<section id="works">
+  <canvas id="works-aurora-canvas"></canvas>
+  <div class="works-header">
+    <span class="section-label">Works</span>
+    <h2 class="reveal" data-config="worksHeading">作品集</h2>
+  </div>
+  <div class="works-panels" id="worksPanels"></div>
+</section>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <button class="modal-nav modal-prev" onclick="navModal(-1)">&#8249;</button>
+    <img id="modalImg" src="" alt="">
+    <button class="modal-nav modal-next" onclick="navModal(1)">&#8250;</button>
+  </div>
+</div>
+
+<!-- ===== CONTACT ===== -->
+<section id="contact">
+  <div class="contact-inner">
+    <span class="section-label">Contact</span>
+    <h2 class="reveal" data-config="contactHeading">保持联系</h2>
+    <p class="reveal reveal-d2" data-config="contactDesc">期待与您交流合作机会。</p>
+    <div class="contact-item reveal reveal-d3" data-config="phone">18243763011</div>
+    <div class="contact-item reveal reveal-d4"><a href="mailto:18243763011@163.com" data-config="email">18243763011@163.com</a></div>
+    <div class="contact-item reveal reveal-d5" data-config="location">中国 · 北京</div>
+    <a href="mailto:18243763011@163.com" class="contact-cta reveal reveal-d5" data-config="ctaText">发送邮件</a>
+  </div>
+</section>
+
+<footer><p>&copy; 2026 Liu Yongjian. All rights reserved.</p></footer>
+
+<!-- ===== EDIT TOGGLE ===== -->
+<button id="edit-toggle" title="编辑模式">EDIT</button>
+<button id="export-btn" title="导出图片到本地">导出图片</button>
+
+<script>
+/* ================================================================
+   CUSTOM CURSOR — dot + trailing ring
+   ================================================================ */
+(function(){
+  const dot = document.getElementById('cursor-dot');
+  const ring = document.getElementById('cursor-ring');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    dot.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+  });
+
+  const hoverEls = document.querySelectorAll('a,button,[role="button"],input[type="submit"],input[type="button"],.exp-card,.work-item,.works-panel-header,.modal-close,.modal-nav,.work-item-add,.filter-btn,.refresh-btn,.cta-btn,[onclick]');
+  hoverEls.forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+  });
+
+  function tick(){
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  // Re-bind hover after DOM mutations (drag re-render etc.)
+  const observer = new MutationObserver(() => {
+    document.querySelectorAll('a,button,[role="button"],input[type="submit"],input[type="button"],.exp-card,.work-item,.works-panel-header,.modal-close,.modal-nav,.work-item-add,.filter-btn,.refresh-btn,.cta-btn,[onclick]').forEach(el => {
+      if(!el.dataset.cursorBound){
+        el.dataset.cursorBound = '1';
+        el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+        el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+      }
+    });
+  });
+  observer.observe(document.body, {childList:true,subtree:true});
+})();
+
+/* ================================================================
+   CONFIG — 可编辑配置区域（修改此处即可更新页面内容）
+   ================================================================
+   修改说明：
+   - name: 你的姓名
+   - title: 职位/副标题
+   - aboutHeading / aboutP1 / aboutP2: 个人简介
+   - stats: 三个统计数据（数值和标签）
+   - skills: 技能列表（name=名称, level=熟练度, iconSvg=SVG图标HTML）
+   - experience: 工作经历（company=公司, role=职位, date=时间, details=详情列表）
+   - contact: 联系方式
+   - ctaText: CTA按钮文字
+   - ctaLink: CTA链接
+   - marqueeHeading: 活动实拍标题
+   - worksHeading: 作品集标题
+   - skillsHeading: 技能区标题
+   - expHeading: 履历区标题
+   - contactHeading / contactDesc: 联系区标题和描述
+   - logoText: 导航栏logo文字
+   =============================================================== */
+const CONFIG = {
+  name: '刘永健个人作品站',
+  title: 'Liu Yongjian\'s Personal Artwork Website',
+  logoText: 'LIU YONGJIAN',
+  aboutHeading: '设计不是一种技能，<br>而是捕捉事物本质的感知能力<div>和洞察能力。</div>',
+  aboutP1: '我是刘永健，一名在实战中打磨设计思维的视觉设计师。在爱奇艺，我为头部影视及活动项目打造视觉营销，用视觉语言让作品被看见、被记住，学会了用创意引爆传播；在新东方，我主导品牌视觉体系迭代，用体系化设计为教育品牌注入新活力，沉淀了商业设计的全局思维。',
+  aboutP2: '同时，在 AIGC 领域持续探索，打破传统设计的边界，让创意落地更快、表达更有力量。始终以「解决问题、传递价值」为核心，让每一份设计都兼具美感与商业说服力。',
+  skillsHeading: '设计工具与技术',
+  expHeading: '工作经历',
+  marqueeHeading: '活动实拍',
+  worksHeading: '作品集展示',
+  contactHeading: '欢迎随时联系',
+  contactDesc: '期待与您交流合作机会。',
+  phone: '电话同微信：182 4376 3011',
+  email: '邮箱：18243763011@163.com',
+  location: '中国 · 北京',
+  ctaText: '发送邮件',
+  ctaLink: 'mailto:18243763011@163.com',
+  imagesBase: 'images/',
+  stats: [
+    { value: '2%', label: '专业排名' },
+    { value: '2+', label: '年经验' },
+    { value: '20+', label: '核心技能' }
+  ],
+  skills: [
+    { name: 'Photoshop', level: '精通', iconSvg: '<svg viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="3" fill="#001e36"></rect><text x="20" y="27" text-anchor="middle" fill="#31a8ff" font-weight="900" font-size="14">Ps</text></svg>' },
+    { name: 'Illustrator', level: '精通', iconSvg: '<svg viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="3" fill="#330000"></rect><text x="20" y="27" text-anchor="middle" fill="#ff9a00" font-weight="900" font-size="14">Ai</text></svg>' },
+    { name: 'After Effects', level: '熟练', iconSvg: '<svg viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="3" fill="#1a0033"></rect><text x="20" y="27" text-anchor="middle" fill="#9a6bff" font-weight="900" font-size="14">Ae</text></svg>' },
+    { name: 'Figma', level: '熟练', iconSvg: '<svg viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="3" fill="#0a0a0a"></rect><text x="20" y="27" text-anchor="middle" fill="#fff" font-weight="900" font-size="13">Fg</text></svg>' },
+    { name: 'Cinema 4D', level: '基础', iconSvg: '<svg viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="3" fill="#001a33"></rect><text x="20" y="27" text-anchor="middle" fill="#00aaff" font-weight="900" font-size="12">C4D</text></svg>' },
+    { name: 'Stable Diffusion', level: '熟练', iconSvg: '<svg viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="3" fill="#1a0033"></rect><circle cx="20" cy="20" r="8" fill="none" stroke="#bb66ff" stroke-width="2.5"></circle></svg>' },
+    { name: 'Midjourney', level: '精通', iconSvg: '<svg viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="3" fill="#001a0a"></rect><path d="M12 28L28 12M12 12h16v16" stroke="#00ff88" stroke-width="3" fill="none" stroke-linecap="round"></path></svg>' },
+    { name: '即梦', level: '精通', iconSvg: '<img src="data:image/png;base64,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" alt="1" class="skill-img-icon">' },
+    { name: 'Master Go', level: '精通', iconSvg: '<img src="data:image/png;base64,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" alt="1" class="skill-img-icon">' },
+    { name: 'ID', level: '精通', iconSvg: '<img src="data:image/png;base64,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" alt="1" class="skill-img-icon">' },
+    { name: '剪映', level: '精通', iconSvg: '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsSAAALEgHS3X78AAAMO0lEQVR4nO3dsVPbaB7G8SfM1siz1HayVyOG1FaGtIc9DNdhuJ3sVotJiq2CnW3SXCxSXZFgtguzE0x3GQazbZi162Vi98taNTOy/oFcYb/EMeYFG9v6vdLzKRNC3kz8Ra/0vpLuff78GaNIJOZWATwGsAhgaaRvQjRZpwDOAHz0/YsPo3yDe8MEkkjMPQDwEsAqAGuUv5AoJG0AHwC89P2L89v+oVsFkkjMJQD8F8CTUUdHJMg+gJ99/8K/6QtnbvqCRGLuBwDnYBwUHU8AnHc/21raI0giMfcODIOibd/3L3647jcHBtKdUn0AT74pHk4BrA6acl03xWIcFCdL6Hzmr7gSSHdaxTgobpa6n/2vfBVI96SF5xwUV0/6T9wvz0G65x3n4PoGxVsbwAN1PtJ7BPkvGAeRhU4LALpHkO4K+V+hDYlInu98/+JcHUFehjkSIoFeAl+mWKvhjYNIpFUAuGdZ364C+F/IgyGS6F8z6GxZJ6KrHs+gcz8HEV21eM+yvh3tjimiGLhxuztRnDEQIg0GQqTBQIg0GAiRBgMh0mAgRBoMhEiDgRBpMBAiDQZCpMFAiDQYCJEGAyHSYCBEGgyESIOBEGkwECINBkKkwUCINBgIkQYDIdJgIEQaDIRIg4EQaTAQIg0GQqTBQIg0GAiRxjdhD2AUlmXBtufDHkaktNsBGo1G2MMQx4hALMtCJrOMbDYD255HMpkMe0iRFAQBqtUTvH9/gFqtHvZwRBD9fhDLsuC6r5DJLGN2djbs4cSK53kolXZwcFCZ6t+bSqVQLG6LiVTsOYht22g0zpDLrTGOECSTSezuvkGtdgrbtif+96VSKZTLb/Hp05/I5dYm/vfdlshAbNtGtXrEMASYn59HtXo0sUikhqGICySVSjEOYWZnZ1Euvxnr97QsC4XCttgwFFGBWJaFg4PfGIdA8/PzWF/P3fn7qDAajTMUCs/HMLLJEhVIsbiN+XlevpVqY2P0QPrDMOWHoJjLvI6TxubmT2EPgzTS6TRSqRRardZQfy6f30SxuG1MFL1EHEEsy0K5/DbsYdAtOE761l+7vp5Do3GGUuk/RsYBCAmEi3/mePTIufFrVBi7u2+M/38VM8UiM+iOII6TRrn81vgoejEQGsqgD7/jpFEsbiOdvv30yxQiplhkFnUUcZw0qtUjHB8fRTIOgEcQGkE2m4nsEaMfA6GhxelyPKdYRBoMhEiDgRBpMBAiDeNP0iuVQ/z993B7g+hr9++nRG85D5PxgeRya9jb+xWl0g7a7XbYwzGKZVkoFrcZh0Ykplibmz91t1Fvw7KssIcjXu/Wc2mXbIMggOu+RqPRDHsoAIQ8tMFx0jg+PhrL9wrrYQOmKBS2sbW1KXJ3reu+Rrm8J2omEIkjSC/1sIFG4wyZzHLYwxFD7bCVeLNSpXKIhYWHcF150+TIBaIkk0m8f/8bqtWjoe5hiJpMZlns1vOTk9+xsPAQ+fzToW/CmpbIBqKk053pW7V6hFQqFfZwpkZtJHz//jdxYdTrdWSzK1hf/7fYMJTIB6Kk02l8+vQnyuW3kQ5F8g7bZrOJbHYFmcyKiIfC3UZsAlFyuTXUaqeRu+Klni8lMQzP87C19QyOs2RMGErsAgE6z3kqFJ5fXho2meQHrwVBgGLxF9j2orFXFWMZiNIbyjie+TRNai2jVjsVGYbrvoZtL6Jc3gt7OHcSuXWQu/A8D/n8U9HTAMuykM9vil3LiNquhlgfQfolk8nLK14SLw2bsJZRKLyITBwAAxlIXRqWcsWr9zE60sKo1+vi1zLugoFo5HJrl5eGw7ji5Thp1GqnIhf51FpGJrMSyTAUEYE0Gk1UKodhD+NaudzaVDdD9q5lSHtWsed5xq1l3IWIk3RFvV1I2lWZXkEQoFTamcjVmc4l2zfi1jGA+G4CFRWIYkIo4/zASP73TvIHgglEBqJI/uAo9XodpdLOSNMNdcOStHsygE4Yu7t74rafT5voQBQTHm1Zr9dRKPxyq1cpcy3DHEYEopgQSqVyiFJp59orO5JvWLpp7HFkVCCKCaH0/xReX8+hWNwWd7kWGO7oFzdGBqJIDyUIAhwcVJDJLIsNY9Tzp7gwOhBFeijSeJ6HQuEFqtWTsIciXiQCUSRPYySI61rGXUQqEIWhfE1dsnXdnbCHYpxIBqLEPRSuZdxdpANR4hhKpXIYua3nYYhFIEocQuFaxnjFKhBF8mLdqLiWMRmxDASQv93jtriWMVmxDUQxNRResp2O2AeimBIKw5guEXcUEknFIwiAfH4TxeK26CNHPx5JpiPWgUThsi9DmaxYBpLJLMN1XxkdRj+GMhmxCiQOu3552Xe8YhFIHMLox1DGI9KBmPDQh0ljKHcTyUAYxlXcijKaSAWiFvsKhedhD0UsbmYcTiQCMWUVXBKGcjvGByJ5Z67neahWT0Q+GE5hKHrGBiJ5kS8IAhQKLy7XJEw4J+INVoMZF4j0MHS3uKZSKbjuKywv/zOE0d2Mt+heZUwg0tcyhpmqSP+3MJQvxAci/cNUr9eRzz8baQ4v/d/GUAQHIn060mw2USi8GMsCnORpIxDvxwaJC0T6Ce0kNwVKDyWOGyLFBCL5XRnA9H6KmrCmE6dQRARi2zaq1SOxH4gw3pfBUGQQEYjjdF67LI2ERTTLsuC6r8ROOYFOKPn800huiOQ96QOoVxxLePd3u91GPv8UCwsPxb4JOJlM4vj4CNXqERxH5hW5UTGQHp7nYWPje5GvOG61Wsjnn+LRo8eo12WNTUmn05ELhYGgcwK+tfUMtr0o/p0ZjUYDmcwKstkVhjIFsQ4kCAK47mvY9qJxJ5q1Wv0yFM/zwh7OQL2hpFKpsIczktgGUqkcwnGW4Lpmv821VqvDthextfVMdCifPv2JcvmtcaHELpB6vY6FhYciTsDH6eCgchlKEARhD2egXG7NuFBiE0iz2UQ2u4JMZiVSYfRTobjua4YyBpEPxPM8bG09g+MsibsyNSntdhuuu3MZilQqlEJhG5ZlhT2cgSIbiMkn4OOiQpG8hgIAhcJzNBpnIkOJZCB7e792f3rGb/fpIGoNRXIos7OzIkOJVCCVyiEWFh7y1tFrqFAkr6GoUGx7PuyhAIhIIJK2hpigdw1FaihSfBP2AO5qb+9XHB9XAcD4VdswlEo72NhYF70ZMkzGB7K5+ZPYe0jIfJGYYhFNCgMh0mAgRBoMhEiDgdBIpO7zGjcGQiNxnCXRW+zHhYHQ0IIgQKvVutw5HOUFRwZCQ+u/LVmtzEve6zUqBkJD++OP2sBfV3u97t//h+j7UYYhIpBWK9rz2Ki56cEWapt9KvWd8ecpQgJpib6xh744Ofl9qJ3Spp+niAgEAFx3B81mM+xh0A12d8sj/Tl1nvLo0WOjzlPEBAIA+bzcBw5Q57aCu9623Gg0Lm/eMuE8RVQgjUYDhcKLsIdBAwRBgHz+2di+X2davSP+kUWiAgE6c9atrfH9R9DdBUEwsafBtNvty/OUjY3vxZ2niHi6+yDr6zm47iuxj/6Pi7u8Ym5UjpNGq+WJuDtUbCDAl5fqrK/nGMqUeZ6HQuGF+GcVT5roQBTLspDJLCObzYh9Z2FU1Ot17O7uxT4MxYhA+vHe88mQMq2RxMhAiKZF3FUsIkkYCJEGAyHSYCBEGgyESIOBEGkwECINBkKkwUCINBgIkQYDIdJgIEQaDIRIg4EQaTAQIg0GQqTBQIg0GAiRBgMh0mAgRBoMhEiDgRBpMBAiDQZCpMFAiDQYCJEGAyHSYCBEGgyESGMGwGnYgyAS6nQGwFnYoyAS6mwGwMewR0Ek1Md7nz9/RiIx5wOwwh4NkSBt379IqJP0D6EOhUieDwCgjiAPAPwV7niIRPnO9y/OZwDA9y/OAeyHOx4iMfa7TXSOIACQSMwlAJyD5yIUb20AD3z/wgd6Fgq7v/BzWKMiEuJnFQfQt5Lu+xfvwKkWxdd+t4FLl1OsXonE3EcAS9MZE5EIp75/8bj/F6/bi7UKbkGh+DhF5zN/xcAjiJJIzL0D8GQyYyISYd/3L3647je1u3m7f/BHdM7siaKkDeBHXRzALba7d09aHoAn7xQd++hcyn130xdqp1j9uivuL9GZr3G9hEzSRmf7yEu1CHgbQwXSK5GYWwXwGMAieMWLZDpF53aOj75/MdJ+w/8DMOzvxQ/RbUgAAAAASUVORK5CYII=" alt="剪映" class="skill-img-icon">' },
+    { name: 'GPT', level: '精通', iconSvg: '<img src="data:image/png;base64,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" alt="GPT" class="skill-img-icon">' }
+  ],
+  experience: [
+    {
+      company: '新东方教育科技集团',
+      role: '视觉设计师',
+      date: '2026.03 — 至今 · 北京',
+      logo: 'images/logo_xdf.png',
+      details: [
+        '主导华北大区视觉体系搭建与文创开发，独立完成全链路设计落地，AIGC精准参与提效赋能；',
+        '深度对齐业务目标，精准输出高转化创意方案，主导大型会议主视觉项目提案与比稿；',
+        '为学科教育、文旅游学、新媒体社群等多业务线提供系统性视觉及宣传物料支持；',
+        '负责校区SI导视与装饰、墙面和海报相关物料设计，支撑品牌推广与活动宣发工作。'
+      ]
+    },
+    {
+      company: '爱奇艺科技有限公司',
+      role: '视觉设计师',
+      date: '2024.07 — 2026.03 · 北京',
+      logo: 'images/logo_iqiyi.png',
+      details: [
+        '承接公司全场景设计需求落地，聚焦品牌社媒/线上宣传物料落地，保障设计物料按时按质交付；',
+        '完成多场活动KV主视觉设计及系列物料延展、印刷和落地执行，助力活动社媒宣传氛围营造与品牌宣传；',
+        '主导公司年会、双十一、新年等多节点营销活动视觉设计，结合节日/活动调性打造贴合社媒传播的视觉体系；',
+        '负责主站及官网Banner设计打造多风格社媒宣传图设计，提升品牌线上社媒视觉质感。'
+      ]
+    }
+  ]
+};
+
+/* ===== CONFIG 默认值备份（用于自愈恢复） ===== */
+const _DEF = {
+  skills: CONFIG.skills,
+  experience: CONFIG.experience,
+  stats: CONFIG.stats
+};
+
+/* ===== IMAGE DATA ===== */
+const catImages={};
+catImages['kv']=['p01_00.jpeg','p01_01.jpeg','p01_02.jpeg','p01_03.jpeg','p01_04.jpeg','p02_00.jpeg','p02_01.jpeg','p02_02.jpeg','p03_00.jpeg','p03_01.jpeg','p03_02.jpeg','p03_03.jpeg','p03_04.jpeg','p03_05.jpeg','p03_06.jpeg','p03_07.jpeg','p03_08.jpeg','p03_09.jpeg','p03_10.jpeg','p03_11.jpeg'];
+catImages['poster']=['p04_02.jpeg','p04_03.jpeg','p04_04.jpeg','p04_05.jpeg','p04_06.jpeg','p04_07.jpeg','p04_08.jpeg','p04_09.jpeg','p04_10.jpeg','p04_11.jpeg','p04_12.jpeg','p04_13.jpeg','p05_02.jpeg','p05_03.jpeg','p05_04.jpeg','p05_05.jpeg','p05_06.jpeg','p05_07.jpeg','p06_00.jpeg','p06_01.jpeg','p06_02.jpeg','p06_05.jpeg','p06_06.jpeg'];
+catImages['banner']=['p07_02.jpeg','p07_03.jpeg','p07_04.jpeg','p07_05.jpeg','p07_06.jpeg','p08_02.jpeg','p08_03.jpeg','p08_04.jpeg','p08_05.jpeg','p08_06.jpeg','p08_07.jpeg','p08_08.jpeg','p08_09.jpeg','p09_00.jpeg','p09_01.jpeg','p09_02.jpeg','p09_06.jpeg','p09_08.jpeg','p09_10.jpeg'];
+catImages['illustration']=['p10_02.jpeg','p10_03.jpeg','p10_04.jpeg','p10_05.jpeg','p10_06.jpeg','p10_07.jpeg','p10_08.jpeg','p10_09.jpeg','p10_10.jpeg','p11_02.jpeg','p11_03.jpeg','p11_04.jpeg','p11_05.jpeg','p11_06.jpeg','p11_08.jpeg','p11_09.jpeg','p11_10.jpeg','p11_11.jpeg','p12_00.jpeg','p12_01.jpeg','p12_02.jpeg','p12_03.jpeg','p12_04.jpeg','p12_05.jpeg','p12_06.jpeg'];
+catImages['logo']=['p13_00.jpeg','p13_01.jpeg','p13_02.jpeg','p13_03.jpeg','p13_04.jpeg','p13_05.jpeg','p13_06.jpeg','p14_02.jpeg','p14_03.jpeg','p14_04.jpeg','p14_05.jpeg','p14_06.jpeg','p14_07.jpeg','p14_08.jpeg','p14_09.jpeg','p15_02.jpeg','p15_03.jpeg','p15_04.jpeg','p15_05.jpeg','p15_06.jpeg','p15_07.jpeg'];
+catImages['typography']=['p16_02.jpeg','p16_03.jpeg','p16_04.jpeg','p16_05.jpeg','p16_06.jpeg','p16_07.jpeg','p16_08.jpeg','p16_09.jpeg','p16_10.jpeg','p16_11.jpeg','p16_12.jpeg','p17_02.jpeg','p17_03.jpeg','p17_04.jpeg','p17_05.jpeg','p17_06.jpeg','p17_07.jpeg','p17_08.jpeg','p17_09.jpeg','p17_10.jpeg','p17_11.jpeg','p17_12.jpeg','p17_13.jpeg','p17_14.jpeg','p18_01.jpeg','p18_02.jpeg','p18_03.jpeg'];
+catImages['aigc']=['p19_02.jpeg','p19_03.jpeg','p20_02.jpeg','p21_03.jpeg','p22_02.jpeg','p22_03.jpeg','p22_04.jpeg','p22_05.jpeg','p22_07.jpeg','p22_08.jpeg','p22_09.jpeg','p22_10.jpeg'];
+catImages['event']=['p23_02.jpeg','p23_03.jpeg','p23_04.jpeg','p23_05.jpeg','p23_06.jpeg','p23_07.jpeg','p23_08.jpeg','p23_09.jpeg','p24_00.jpeg','p24_01.jpeg','p24_02.jpeg','p24_05.png','p24_06.jpeg','p24_07.png','p24_08.jpeg','p24_09.png','p24_10.jpeg','p25_02.jpeg','p25_03.jpeg','p25_04.jpeg','p25_05.jpeg','p25_06.jpeg','p25_07.jpeg','p25_08.jpeg','p25_09.jpeg','p25_10.jpeg'];
+catImages['ip']=['p27_02.jpeg','p27_03.jpeg','p27_04.jpeg','p28_02.jpeg','p28_03.jpeg','p28_04.jpeg','p28_05.jpeg','p28_06.jpeg','p28_07.jpeg','p28_08.jpeg','p29_02.jpeg'];
+
+const CATEGORIES={
+    "kv": "影视海报",
+    "poster": "主视觉设计",
+    "event": "活动实拍及后期处理",
+    "typography": "海报banner",
+    "banner": "会议设计",
+    "aigc": "AIGC创作",
+    "ip": "IP设计",
+    "logo": "新媒体长图",
+    "字体logo设计": "字体LOGO设计",
+    "手绘厚涂": "手绘厚涂",
+    "illustration": "好评如潮"
+};
+
+// Load saved category names
+(function(){
+  const saved=localStorage.getItem('portfolio_categories');
+  if(saved){try{Object.assign(CATEGORIES,JSON.parse(saved))}catch(e){}}
+})();
+
+/* ===== WORKSPACE STATE (IndexedDB for large images) ===== */
+const STORAGE_KEY='portfolio_works_v2';
+let wsState=null;
+let editMode=false;
+let db=null;
+let dbReady=null;
+const imageCache={}; // In-memory cache to avoid repeated IndexedDB reads
+
+// IndexedDB setup (singleton — only open once, always return same promise)
+function initDB(){
+  if(dbReady)return dbReady;
+  dbReady=new Promise((resolve,reject)=>{
+    const req=indexedDB.open('portfolio_images',1);
+    req.onupgradeneeded=function(e){
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('images')){
+        const store=db.createObjectStore('images',{keyPath:'key'});
+        store.createIndex('cat','cat',{unique:false});
+      }
+    };
+    req.onsuccess=function(e){db=e.target.result;resolve(db);};
+    req.onerror=function(e){reject(e.target.error);};
+  });
+  return dbReady;
+}
+
+function loadWorksState(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(raw){try{wsState=JSON.parse(raw)}catch(e){wsState=null}}
+  if(!wsState)wsState={customImages:{},deletedImages:{},captions:{},order:{},catOrder:null};
+  if(!wsState.catOrder||!wsState.catOrder.length)wsState.catOrder=Object.keys(CATEGORIES).filter(c=>c!=='all');
+  for(const cat of Object.keys(catImages)){
+    if(!wsState.customImages[cat])wsState.customImages[cat]=[];
+    if(!wsState.deletedImages[cat])wsState.deletedImages[cat]=[];
+    if(!wsState.captions[cat])wsState.captions[cat]={};
+    if(!wsState.order[cat])wsState.order[cat]=[];
+  }
+  // Sync catOrder: add new categories, remove deleted ones
+  const knownCats=new Set(Object.keys(CATEGORIES).filter(c=>c!=='all'));
+  wsState.catOrder=wsState.catOrder.filter(c=>knownCats.has(c));
+  for(const c of knownCats){if(!wsState.catOrder.includes(c))wsState.catOrder.push(c)}
+  // Ensure newly-added categories (not in catImages) have wsState arrays
+  for(const c of knownCats){
+    if(!wsState.customImages[c])wsState.customImages[c]=[];
+    if(!wsState.deletedImages[c])wsState.deletedImages[c]=[];
+    if(!wsState.captions[c])wsState.captions[c]={};
+    if(!wsState.order[c])wsState.order[c]=[];
+  }
+  initDB().catch(()=>console.warn('IndexedDB init failed, fallback to localStorage'));
+}
+try{loadWorksState()}catch(e){wsState={customImages:{},deletedImages:{},captions:{},order:{},catOrder:Object.keys(CATEGORIES).filter(c=>c!=='all')}}
+
+function saveWorksState(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(wsState));
+}
+
+// IndexedDB helpers
+function storeImage(key,dataUrl,cat){
+  if(!db)return Promise.reject('DB not ready');
+  imageCache[key]=dataUrl;
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(['images'],'readwrite');
+    const store=tx.objectStore('images');
+    store.put({key,dataUrl,cat});
+    tx.oncomplete=()=>resolve();
+    tx.onerror=(e)=>reject(e.target.error);
+  });
+}
+
+function deleteImage(key){
+  if(!db)return Promise.reject('DB not ready');
+  delete imageCache[key];
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(['images'],'readwrite');
+    const store=tx.objectStore('images');
+    store.delete(key);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=(e)=>reject(e.target.error);
+  });
+}
+
+function getImage(key){
+  if(imageCache[key])return Promise.resolve(imageCache[key]);
+  if(!db)return Promise.reject('DB not ready');
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(['images'],'readonly');
+    const store=tx.objectStore('images');
+    const req=store.get(key);
+    req.onsuccess=()=>{
+      if(req.result){imageCache[key]=req.result.dataUrl;resolve(req.result.dataUrl);}
+      else resolve(null);
+    };
+    req.onerror=(e)=>reject(e.target.error);
+  });
+}
+
+/* ===== BUILD IMAGE DATA ===== */
+async function buildWorksData(){
+  try{await initDB()}catch(e){/* IndexedDB unavailable — custom images will be skipped gracefully */}
+  const allImages=[];
+  const wd={};
+  // Process ALL categories (built-in + custom), not just catImages
+  const allCats=Object.keys(CATEGORIES).filter(c=>c!=='all');
+  for(const cat of allCats){
+    const delSet=new Set(wsState.deletedImages[cat]||[]);
+    const captions=wsState.captions[cat]||{};
+    const order=wsState.order[cat]||[];
+    // Fetch custom images from IndexedDB in parallel
+    const customMetas=wsState.customImages[cat]||[];
+    const customs=[];
+    if(customMetas.length){
+      const promises=customMetas.map(async meta=>{
+        try{
+          const dataUrl=await getImage(meta.key);
+          if(dataUrl)return {id:'custom:'+meta.key,src:dataUrl,name:meta.name,cat};
+        }catch(e){/* skip broken entries */}
+        // Fallback: load from images folder
+        const keyPart=meta.key.startsWith('custom:')?meta.key.slice(7):meta.key;
+        return {id:'custom:'+meta.key,src:CONFIG.imagesBase+keyPart+'.png',name:meta.name,cat};
+      });
+      const results=await Promise.all(promises);
+      for(const r of results)if(r)customs.push(r);
+    }
+    // Handle custom categories that have no native images
+    const nativeImages=(catImages[cat]||[])
+      .map((fn,origIdx)=>({fn,origIdx}))
+      .filter(({fn})=>!delSet.has(fn))
+      .map(({fn,origIdx})=>({id:'native:'+origIdx,src:CONFIG.imagesBase+fn,name:captions[String(origIdx)]||(CATEGORIES[cat]+' '+(origIdx+1)),cat}));
+    const merged=[...nativeImages,...customs];
+    // Apply saved order if available
+    if(order.length){
+      const idMap=new Map(merged.map(it=>[it.id,it]));
+      const ordered=[];
+      for(const oid of order){
+        const it=idMap.get(oid);
+        if(it){ordered.push(it);idMap.delete(oid)}
+      }
+      // Append any new items not in saved order
+      for(const it of idMap.values())ordered.push(it);
+      wd[cat]=ordered;
+    }else{
+      wd[cat]=merged;
+    }
+    allImages.push(...wd[cat]);
+  }
+  wd.all=allImages;
+  worksVersion++; // Invalidate all rendered grids
+  document.querySelectorAll('.works-panel-grid').forEach(g=>{g.dataset.renderedVersion='0'});
+  return wd;
+}
+let worksData=null;
+let worksVersion=0;   // Bump when worksData changes, forces grid re-render on next expand
+
+/* ===== POPULATE PAGE FROM CONFIG ===== */
+function populatePage(){
+  // Hero
+  document.querySelector('[data-config="name"]').textContent=CONFIG.name;
+  document.querySelector('[data-config="title"]').textContent=CONFIG.title;
+  document.getElementById('logo-text').textContent=CONFIG.logoText;
+
+  // About
+  document.querySelector('[data-config="aboutHeading"]').innerHTML=CONFIG.aboutHeading;
+  document.querySelector('[data-config="aboutP1"]').textContent=CONFIG.aboutP1;
+  document.querySelector('[data-config="aboutP2"]').textContent=CONFIG.aboutP2;
+
+  // Stats
+  const statEls=document.querySelectorAll('[data-config^="stat"]');
+  CONFIG.stats.forEach((s,i)=>{
+    if(statEls[i])statEls[i].textContent=s.value;
+    if(statEls[i])statEls[i].nextElementSibling.textContent=s.label;
+  });
+
+  // Skills
+  document.querySelector('[data-config="skillsHeading"]').textContent=CONFIG.skillsHeading;
+  renderSkills();
+
+  // Experience
+  document.querySelector('[data-config="expHeading"]').textContent=CONFIG.expHeading;
+  const expCards=document.getElementById('expCards');
+  expCards.innerHTML=CONFIG.experience.map((exp,i)=>`
+    <div class="exp-card reveal reveal-d${i+2}" onclick="toggleExp(this)">
+      <div class="exp-card-header">
+        ${exp.logo?`<img class="exp-logo" src="${exp.logo}" alt="${exp.company}">`:''}
+        <div><h3>${exp.company}</h3><div class="exp-role">${exp.role}</div><div class="exp-date">${exp.date}</div></div>
+        <span class="exp-arrow">&#9660;</span>
+      </div>
+      <div class="exp-card-body"><div class="exp-card-body-inner"><ul>
+        ${exp.details.map(d=>`<li>${d}</li>`).join('')}
+      </ul></div></div>
+    </div>
+  `).join('');
+
+  // Contact
+  document.querySelector('[data-config="contactHeading"]').textContent=CONFIG.contactHeading;
+  document.querySelector('[data-config="contactDesc"]').textContent=CONFIG.contactDesc;
+  document.querySelector('[data-config="phone"]').textContent=CONFIG.phone;
+  const emailEl=document.querySelector('[data-config="email"]');
+  emailEl.textContent=CONFIG.email;emailEl.href='mailto:'+CONFIG.email;
+  document.querySelector('[data-config="location"]').textContent=CONFIG.location;
+  const ctaEl=document.querySelector('[data-config="ctaText"]');
+  ctaEl.textContent=CONFIG.ctaText;ctaEl.href=CONFIG.ctaLink;
+
+  // Marquee heading
+  document.querySelector('[data-config="marqueeHeading"]').textContent=CONFIG.marqueeHeading;
+  document.querySelector('[data-config="worksHeading"]').textContent=CONFIG.worksHeading;
+
+  }
+/* ===== LOAD SAVED EDITS (must run before populatePage) ===== */
+try{
+  const savedEdits=localStorage.getItem('portfolio_v2');
+  if(savedEdits){
+    try{
+      const edits=JSON.parse(savedEdits);
+      // 过滤掉非法值：空字符串、非数组/空数组、非字符串/非数字
+      const allowedKeys=['name','title','logoText','aboutHeading','aboutP1','aboutP2',
+        'marqueeHeading','worksHeading','skillsHeading','expHeading',
+        'contactHeading','contactDesc','phone','email','location','ctaText','ctaLink',
+        'skills','experience','stats'];
+      for(const k of Object.keys(edits)){
+        if(!allowedKeys.includes(k)){delete edits[k];continue}
+        const v=edits[k];
+        if(typeof v==='string'&&!v.trim()){delete edits[k];continue}
+      }
+      // 数组字段：如果edits中有该字段且是数组（允许空数组），则覆盖CONFIG
+      ['skills','experience','stats'].forEach(f=>{
+        if(edits.hasOwnProperty(f)){
+          if(Array.isArray(edits[f])){
+            // 保留数组，即使是空数组
+            // 不删除，让Object.assign覆盖
+          }else{
+            // 如果不是数组，删除该字段（不覆盖）
+            delete edits[f];
+          }
+        }
+      });
+      // 合并experience：保留CONFIG中每项的logo字段（localStorage旧数据可能不含logo）
+      if(Array.isArray(edits.experience)&&Array.isArray(CONFIG.experience)){
+        edits.experience=edits.experience.map((e,i)=>{
+          const orig=CONFIG.experience[i];
+          if(orig&&orig.logo) return{...e,logo:orig.logo};
+          return e;
+        });
+      }
+      Object.assign(CONFIG,edits);
+      // 最终验证：如果CONFIG中数组不存在或不是数组，则回退到_DEF（空数组保留）
+      if(!Array.isArray(CONFIG.skills)) CONFIG.skills = _DEF.skills;
+      if(!Array.isArray(CONFIG.experience)) CONFIG.experience = _DEF.experience;
+      if(!Array.isArray(CONFIG.stats)) CONFIG.stats = _DEF.stats;
+    }catch(e){localStorage.removeItem('portfolio_v2')}
+  }
+}catch(e){/* localStorage unavailable — skip */}
+
+try{populatePage()}catch(e){
+  // populatePage 失败时至少尝试填充英雄区
+  try{
+    const n=document.querySelector('[data-config="name"]');
+    if(n)n.textContent=CONFIG.name||'刘永健';
+    const t=document.querySelector('[data-config="title"]');
+    if(t)t.textContent=CONFIG.title||'Visual Designer';
+  }catch(_){}
+}
+
+/* ===== REVEAL ON SCROLL ===== */
+const revealObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
+},{threshold:0.12});
+try{document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el))}catch(e){}
+/* 兜底：800ms 后强制显示所有 .reveal 元素 */
+setTimeout(()=>{try{document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'))}catch(e){}},800);
+
+/* ===== 自愈：检测内容是否被空数据污染 ===== */
+(function autoHeal(){
+  try{
+    const skillsGrid=document.getElementById('skillsGrid');
+    const expCards=document.getElementById('expCards');
+    const skillsEmpty=!skillsGrid||!skillsGrid.children.length||!skillsGrid.textContent.trim();
+    const expEmpty=!expCards||!expCards.children.length||!expCards.textContent.trim();
+    if(skillsEmpty||expEmpty){
+      if(!Array.isArray(CONFIG.skills)||!CONFIG.skills.length) CONFIG.skills = _DEF.skills;
+      if(!Array.isArray(CONFIG.experience)||!CONFIG.experience.length) CONFIG.experience = _DEF.experience;
+      if(!Array.isArray(CONFIG.stats)||!CONFIG.stats.length) CONFIG.stats = _DEF.stats;
+      populatePage();
+      try{document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el))}catch(e){}
+      document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'));
+    }
+  }catch(e){}
+})();
+
+/* ===== AURORA CANVAS (between video and frost) ===== */
+const ac=document.getElementById('aurora-canvas');
+const actx=ac.getContext('2d');
+let aW,aH,aTime=0;
+const auroraLayers=[
+  {h:0.42,s:0.6,l:0.44,a:0.06,speed:0.0002,amp:0.42,phase:0},
+  {h:0.55,s:0.5,l:0.46,a:0.04,speed:0.0003,amp:0.38,phase:2.1},
+  {h:0.38,s:0.55,l:0.4,a:0.05,speed:0.00026,amp:0.48,phase:4.2},
+  {h:0.5,s:0.48,l:0.48,a:0.035,speed:0.00036,amp:0.35,phase:1.5}
+];
+function resizeAurora(){aW=ac.width=ac.offsetWidth;aH=ac.height=ac.offsetHeight}
+resizeAurora();window.addEventListener('resize',resizeAurora);
+function drawAurora(){
+  actx.clearRect(0,0,aW,aH);aTime++;
+  auroraLayers.forEach(L=>{
+    const g=actx.createLinearGradient(0,0,0,aH);
+    for(let y=0;y<=1;y+=0.02){
+      const w=Math.sin(y*8+aTime*L.speed+L.phase)*L.amp;
+      const alpha=L.a*(0.5+0.5*Math.sin(y*Math.PI))*(0.7+0.3*Math.sin(aTime*0.0007));
+      g.addColorStop(y,`hsla(${L.h*360+w*30},${L.s*100}%,${L.l*100}%,${alpha})`);
+    }
+    actx.fillStyle=g;actx.fillRect(0,0,aW,aH);
+  });
+  requestAnimationFrame(drawAurora);
+}
+drawAurora();
+
+/* ===== WORKS AURORA CANVAS ===== */
+const wac=document.getElementById('works-aurora-canvas');
+if(wac){
+  const wctx=wac.getContext('2d');
+  let wW,wH,wTime=0;
+  const worksAuroraLayers=[
+    {h:0.12,s:0.35,l:0.25,a:0.07,speed:0.00018,amp:0.44,phase:0},
+    {h:0.18,s:0.30,l:0.22,a:0.05,speed:0.00025,amp:0.36,phase:1.8},
+    {h:0.08,s:0.4,l:0.28,a:0.04,speed:0.00022,amp:0.40,phase:3.5},
+    {h:0.22,s:0.28,l:0.20,a:0.06,speed:0.0003,amp:0.38,phase:5.2}
+  ];
+  function resizeWorksAurora(){wW=wac.width=wac.offsetWidth;wH=wac.height=wac.offsetHeight}
+  resizeWorksAurora();window.addEventListener('resize',resizeWorksAurora);
+  function drawWorksAurora(){
+    wctx.clearRect(0,0,wW,wH);wTime++;
+    worksAuroraLayers.forEach(L=>{
+      const g=wctx.createLinearGradient(0,0,wW*0.6,wH);
+      for(let y=0;y<=1;y+=0.02){
+        const w=Math.sin(y*10+wTime*L.speed+L.phase)*L.amp;
+        const alpha=L.a*(0.5+0.5*Math.sin(y*Math.PI))*(0.65+0.35*Math.sin(wTime*0.0005));
+        g.addColorStop(y,`hsla(${L.h*360+w*25},${L.s*100}%,${L.l*100}%,${alpha})`);
+      }
+      wctx.fillStyle=g;wctx.fillRect(0,0,wW,wH);
+    });
+    requestAnimationFrame(drawWorksAurora);
+  }
+  drawWorksAurora();
+}
+
+/* ===== NAV SCROLL ===== */
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>50));
+
+/* ===== EXPAND CARDS ===== */
+function toggleExp(card){
+  const body=card.querySelector('.exp-card-body');
+  const isOpen=card.classList.contains('open');
+  document.querySelectorAll('.exp-card').forEach(c=>{c.classList.remove('open');c.querySelector('.exp-card-body').classList.remove('open')});
+  if(!isOpen){card.classList.add('open');body.classList.add('open')}
+}
+
+/* ===== WORKS CAT FILTERS ===== */
+/* ===== WORKS PANELS ===== */
+const worksPanelsEl=document.getElementById('worksPanels');
+let expandedCat=null;
+
+function buildPanelsHTML(){
+  const cats=wsState.catOrder&&wsState.catOrder.length?wsState.catOrder:Object.keys(CATEGORIES).filter(c=>c!=='all');
+  let html='';
+  cats.forEach(cat=>{
+    if(!CATEGORIES[cat])return;
+    const count=worksData?worksData[cat]?.length||0:0;
+    html+=`<div class="works-panel" data-cat="${cat}" ${editMode?'draggable="true"':''}>
+      <div class="works-panel-header" onclick="toggleWorksPanel('${cat}')">
+        <div class="works-panel-header-left">
+          ${editMode?`<div class="panel-drag-handle" onmousedown="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="8" cy="5" r="1.5"/><circle cx="16" cy="5" r="1.5"/><circle cx="8" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="8" cy="19" r="1.5"/><circle cx="16" cy="19" r="1.5"/></svg></div>`:''}
+          <div class="works-panel-dot"></div>
+          <span class="works-panel-cat-name">${CATEGORIES[cat]}</span>
+        </div>
+        <div class="works-panel-header-right">
+          <span class="works-panel-count">${count}</span>
+          <svg class="works-panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="works-panel-body">
+        <div class="works-panel-body-inner"><div class="works-panel-grid" id="worksGrid-${cat}"></div></div>
+      </div>
+    </div>`;
+  });
+  if(editMode){
+    html+=`<button class="panel-add-btn" onclick="addNewCategory()">+ 添加分组</button>`;
+  }
+  worksPanelsEl.innerHTML=html;
+  attachGridDragListeners();
+  if(editMode)attachPanelDragListeners();
+}
+
+function toggleWorksPanel(cat){
+  const panel=document.querySelector('.works-panel[data-cat="'+cat+'"]');
+  if(!panel)return;
+  if(expandedCat===cat){
+    panel.classList.remove('expanded');
+    expandedCat=null;
+  }else{
+    if(expandedCat){
+      const prev=document.querySelector('.works-panel[data-cat="'+expandedCat+'"]');
+      if(prev)prev.classList.remove('expanded');
+    }
+    panel.classList.add('expanded');
+    expandedCat=cat;
+    // Only re-render if grid version is stale or empty
+    const grid=document.getElementById('worksGrid-'+cat);
+    if(grid&&parseInt(grid.dataset.renderedVersion||'0')!==worksVersion){
+      renderPanelWorks(cat);
+    }
+  }
+}
+
+function updatePanelCounts(){
+  if(!worksData)return;
+  document.querySelectorAll('.works-panel').forEach(panel=>{
+    const cat=panel.dataset.cat;
+    const cnt=worksData[cat]?.length||0;
+    const el=panel.querySelector('.works-panel-count');
+    if(el)el.textContent=cnt;
+  });
+}
+
+function renderPanelWorks(cat){
+  const grid=document.getElementById('worksGrid-'+cat);
+  if(!grid||!worksData)return;
+  const items=worksData[cat]||[];
+  let html=items.map((item,i)=>`<div class="work-item reveal" draggable="${editMode}" onclick="if(!editMode)openWorkModal('${item.cat}',${i})" data-interactive="true" data-cat="${item.cat}" data-idx="${i}" data-id="${item.id||''}">
+    <div class="work-img-wrap">
+      <img src="${item.src}" alt="${item.name}" loading="lazy">
+      ${editMode?`<button class="work-btn-del" onclick="event.stopPropagation();deleteWorkItem('${item.cat}','${item.id}')" title="删除">&times;</button>
+      <button class="work-btn-replace" onclick="event.stopPropagation();triggerReplace('${item.cat}','${item.id}',this)" title="替换图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></button>`:''}
+    </div>
+    <div class="work-info">
+      <h4 ${editMode?'contenteditable="true"':''} data-cat="${item.cat}" data-idx="${i}" data-id="${item.id||''}" data-field="name">${item.name}</h4>
+      <div class="work-tags"><span class="work-tag" ${editMode?'contenteditable="true"':''} data-cat="${item.cat}" data-idx="${i}" data-field="tag">${CATEGORIES[item.cat]}</span></div>
+    </div>
+  </div>`).join('');
+  if(editMode){
+    html+=`<div class="work-item work-item-add" onclick="showAddWorkForm('${cat}')"><div class="add-work-placeholder"><span class="add-work-icon">+</span><span class="add-work-text">添加作品</span></div></div>`;
+  }
+  grid.innerHTML=html;
+  grid.dataset.renderedVersion=worksVersion;
+  grid.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
+}
+
+function refreshWorksView(cat){
+  if(expandedCat===cat)renderPanelWorks(cat);
+  updatePanelCounts();
+}
+
+/* ===== RENDER WORKS ===== */
+/* ===== RENDER WORKS (panel-aware) ===== */
+const worksGrid=document.getElementById('worksPanels');
+
+function renderWorks(){
+  /* Redirect to panel rendering; if expandedCat is set, refresh that panel */
+  if(!worksData)return;
+  if(expandedCat)renderPanelWorks(expandedCat);
+  updatePanelCounts();
+}
+
+/* ===== DRAG AND DROP REORDERING (panel-aware) ===== */
+let dragSrcIdx=-1;
+let dragCat='';
+
+function handleDragStart(e){
+  const item=e.target.closest('.work-item');
+  if(!item||!editMode)return;
+  dragSrcIdx=parseInt(item.dataset.idx);
+  dragCat=item.dataset.cat;
+  item.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain','');
+}
+function handleDragOver(e){
+  e.preventDefault();
+  const item=e.target.closest('.work-item');
+  if(!item||!editMode||item.dataset.cat!==dragCat)return;
+  item.classList.add('drag-over');
+}
+function handleDragLeave(e){
+  const item=e.target.closest('.work-item');
+  if(item)item.classList.remove('drag-over');
+}
+async function handleDrop(e){
+  e.preventDefault();
+  document.querySelectorAll('.work-item').forEach(el=>el.classList.remove('drag-over','dragging'));
+  const target=e.target.closest('.work-item');
+  if(!target||!editMode||target.dataset.cat!==dragCat)return;
+  const dstIdx=parseInt(target.dataset.idx);
+  if(dstIdx===dragSrcIdx)return;
+  const grid=e.currentTarget;
+  const ids=[];
+  grid.querySelectorAll('.work-item[data-id]').forEach(el=>ids.push(el.dataset.id));
+  const draggedId=ids.splice(dragSrcIdx,1)[0];
+  ids.splice(dstIdx,0,draggedId);
+  wsState.order[dragCat]=ids;
+  saveWorksState();
+  worksData=await buildWorksData();
+  refreshWorksView(dragCat);
+}
+function handleDragEnd(e){
+  document.querySelectorAll('.work-item').forEach(el=>el.classList.remove('drag-over','dragging'));
+}
+function attachGridDragListeners(){
+  document.querySelectorAll('.works-panel-grid').forEach(grid=>{
+    grid.removeEventListener('dragstart',handleDragStart);
+    grid.removeEventListener('dragover',handleDragOver);
+    grid.removeEventListener('dragleave',handleDragLeave);
+    grid.removeEventListener('drop',handleDrop);
+    grid.removeEventListener('dragend',handleDragEnd);
+    grid.addEventListener('dragstart',handleDragStart);
+    grid.addEventListener('dragover',handleDragOver);
+    grid.addEventListener('dragleave',handleDragLeave);
+    grid.addEventListener('drop',handleDrop);
+    grid.addEventListener('dragend',handleDragEnd);
+  });
+}
+
+/* ===== PANEL DRAG REORDER ===== */
+let panelDragSrc='';
+
+function attachPanelDragListeners(){
+  document.querySelectorAll('.works-panel[draggable="true"]').forEach(panel=>{
+    panel.removeEventListener('dragstart',onPanelDragStart);
+    panel.removeEventListener('dragover',onPanelDragOver);
+    panel.removeEventListener('dragleave',onPanelDragLeave);
+    panel.removeEventListener('drop',onPanelDrop);
+    panel.removeEventListener('dragend',onPanelDragEnd);
+    panel.addEventListener('dragstart',onPanelDragStart);
+    panel.addEventListener('dragover',onPanelDragOver);
+    panel.addEventListener('dragleave',onPanelDragLeave);
+    panel.addEventListener('drop',onPanelDrop);
+    panel.addEventListener('dragend',onPanelDragEnd);
+  });
+}
+
+function onPanelDragStart(e){
+  const panel=e.target.closest('.works-panel');
+  if(!panel||!editMode)return;
+  panelDragSrc=panel.dataset.cat;
+  panel.classList.add('panel-dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain','');
+}
+
+function onPanelDragOver(e){
+  e.preventDefault();
+  const panel=e.target.closest('.works-panel');
+  if(!panel||!editMode||panel.dataset.cat===panelDragSrc)return;
+  panel.classList.add('panel-drag-over');
+}
+
+function onPanelDragLeave(e){
+  const panel=e.target.closest('.works-panel');
+  if(panel)panel.classList.remove('panel-drag-over');
+}
+
+function onPanelDrop(e){
+  e.preventDefault();
+  document.querySelectorAll('.works-panel').forEach(p=>p.classList.remove('panel-drag-over','panel-dragging'));
+  const panel=e.target.closest('.works-panel');
+  if(!panel||!editMode||panel.dataset.cat===panelDragSrc||!panelDragSrc)return;
+  const dstCat=panel.dataset.cat;
+  const srcIdx=wsState.catOrder.indexOf(panelDragSrc);
+  const dstIdx=wsState.catOrder.indexOf(dstCat);
+  if(srcIdx===-1||dstIdx===-1)return;
+  wsState.catOrder.splice(srcIdx,1);
+  wsState.catOrder.splice(dstIdx,0,panelDragSrc);
+  saveWorksState();
+  panelDragSrc='';
+  buildPanelsHTML();
+  if(expandedCat)renderPanelWorks(expandedCat);
+  updatePanelCounts();
+  attachPanelDragListeners();
+}
+
+function onPanelDragEnd(e){
+  document.querySelectorAll('.works-panel').forEach(p=>p.classList.remove('panel-drag-over','panel-dragging'));
+  panelDragSrc='';
+}
+
+/* ===== ADD NEW CATEGORY ===== */
+function addNewCategory(){
+  const name=(prompt('输入新分组名称：')||'').trim();
+  if(!name)return;
+  // Generate key from name
+  let key=name.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  if(!key||CATEGORIES[key]){key='cat_'+Date.now().toString(36)}
+  // Add to CATEGORIES
+  CATEGORIES[key]=name;
+  localStorage.setItem('portfolio_categories',JSON.stringify(
+    Object.fromEntries(Object.entries(CATEGORIES).filter(([k])=>k!=='all'))
+  ));
+  // Add to wsState
+  wsState.catOrder.push(key);
+  wsState.customImages[key]=[];
+  wsState.deletedImages[key]=[];
+  wsState.captions[key]={};
+  wsState.order[key]=[];
+  saveWorksState();
+  buildPanelsHTML();
+  if(expandedCat)renderPanelWorks(expandedCat);
+  updatePanelCounts();
+  attachPanelDragListeners();
+}
+
+// Init panels after all definitions are available
+buildPanelsHTML();buildWorksData().then(d=>{worksData=d;updatePanelCounts();renderMarquee();}).catch(e=>console.warn('[LOAD] buildWorksData failed:',e));
+
+/* ===== WORK ITEM OPERATIONS ===== */
+async function deleteWorkItem(cat,itemId){
+  if(!confirm('确定删除该作品？'))return;
+  try{
+    // Look up by stable id to avoid stale-index bugs
+    const idx=worksData[cat]?worksData[cat].findIndex(it=>it.id===itemId):-1;
+    if(idx===-1)return;
+    const item=worksData[cat][idx];
+    if(!item)return;
+    if(item.src.startsWith(CONFIG.imagesBase)){
+      const fn=item.src.replace(CONFIG.imagesBase,'');
+      if(!wsState.deletedImages[cat])wsState.deletedImages[cat]=[];
+      if(!wsState.deletedImages[cat].includes(fn))wsState.deletedImages[cat].push(fn);
+    }else{
+      // Delete custom image: match by stable id (key extracted from 'custom:xxx')
+      const customs=wsState.customImages[cat]||[];
+      const itemKey=item.id.startsWith('custom:')?item.id.replace('custom:',''):'';
+      const ci=itemKey?customs.findIndex(c=>c.key===itemKey):-1;
+      if(ci!==-1){
+        const meta=customs[ci];
+        if(meta.key)await deleteImage(meta.key);
+        customs.splice(ci,1);
+      }
+    }
+    saveWorksState();
+    worksData=await buildWorksData();
+    refreshWorksView(cat);
+    if(cat==='event')renderMarquee();
+  }catch(err){
+    alert('删除失败：'+(err.message||'操作失败，请重试'));
+  }
+}
+
+function triggerReplace(cat,itemId,btn){
+  const fi=document.createElement('input');
+  fi.type='file';fi.accept='image/*';
+  fi.style.display='none';
+  document.body.appendChild(fi);
+  fi.onchange=function(){replaceWorkImage(cat,itemId,this);fi.remove();};
+  fi.addEventListener('cancel',()=>fi.remove(),{once:true});
+  // Detect dialog dismissal via focus
+  const onFocus=()=>{window.removeEventListener('focus',onFocus);setTimeout(()=>{if(!fi.files||!fi.files.length)fi.remove();},300);};
+  window.addEventListener('focus',onFocus,{once:true});
+  fi.click();
+}
+
+function replaceWorkImage(cat,itemId,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      // Look up by stable id
+      const idx=worksData[cat]?worksData[cat].findIndex(it=>it.id===itemId):-1;
+      if(idx===-1)return;
+      const item=worksData[cat][idx];
+      if(!item)return;
+      const key='img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+      const name=worksData[cat][idx]?worksData[cat][idx].name:CATEGORIES[cat]+' 新';
+      if(item.src.startsWith(CONFIG.imagesBase)){
+        const fn=item.src.replace(CONFIG.imagesBase,'');
+        if(!wsState.deletedImages[cat])wsState.deletedImages[cat]=[];
+        if(!wsState.deletedImages[cat].includes(fn))wsState.deletedImages[cat].push(fn);
+        if(!wsState.customImages[cat])wsState.customImages[cat]=[];
+        wsState.customImages[cat].push({key,name,cat});
+        await storeImage(key,e.target.result,cat);
+      }else{
+        // Replace custom image: match by stable id
+        const customs=wsState.customImages[cat]||[];
+        const itemKey=item.id.startsWith('custom:')?item.id.replace('custom:',''):'';
+        const ci=itemKey?customs.findIndex(c=>c.key===itemKey):-1;
+        if(ci!==-1){
+          const oldKey=customs[ci].key;
+          if(oldKey)await deleteImage(oldKey);
+          customs[ci].key=key;
+          customs[ci].name=name;
+          await storeImage(key,e.target.result,cat);
+        }
+      }
+      saveWorksState();
+      worksData=await buildWorksData();
+      refreshWorksView(cat);
+      if(cat==='event')renderMarquee();
+    }catch(err){
+      alert('替换失败：'+(err.message||'存储空间不足，请先删除部分作品后重试'));
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ===== ADD NEW WORK FORM ===== */
+function showAddWorkForm(cat){
+  // Create overlay + form if not exists
+  let overlay=document.getElementById('addWorkOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='addWorkOverlay';overlay.className='add-work-form-overlay';
+    overlay.innerHTML=`
+      <div class="add-work-form">
+        <h3>添加新作品</h3>
+        <label>分类</label>
+        <select id="addWorkCat"></select>
+        <label>作品名称</label>
+        <input type="text" id="addWorkName" placeholder="输入作品名称">
+        <label>图片</label>
+        <label class="form-file-label" id="addWorkFileLabel" for="addWorkFile">选择图片</label>
+        <input type="file" id="addWorkFile" accept="image/*" style="display:none">
+        <div class="form-actions">
+          <button class="form-btn-cancel" onclick="closeAddWorkForm()">取消</button>
+          <button class="form-btn-submit" onclick="submitAddWork()">添加</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click',function(e){if(e.target===overlay)closeAddWorkForm()});
+    document.getElementById('addWorkFile').addEventListener('change',function(){
+      const lbl=document.getElementById('addWorkFileLabel');
+      lbl.textContent=this.files[0]?this.files[0].name:'选择图片';
+    });
+  }
+  // Populate category select
+  const sel=document.getElementById('addWorkCat');
+  sel.innerHTML=Object.entries(CATEGORIES).filter(([k])=>k!=='all').map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  sel.value=cat;
+  document.getElementById('addWorkName').value='';
+  document.getElementById('addWorkFile').value='';
+  document.getElementById('addWorkFileLabel').textContent='选择图片';
+  overlay.classList.add('active');
+}
+
+function closeAddWorkForm(){
+  document.getElementById('addWorkOverlay').classList.remove('active');
+}
+
+function submitAddWork(){
+  const cat=document.getElementById('addWorkCat').value;
+  const name=document.getElementById('addWorkName').value.trim()||CATEGORIES[cat]+' 新';
+  const fileInput=document.getElementById('addWorkFile');
+  if(!fileInput.files||!fileInput.files[0]){alert('请选择图片');return}
+  const reader=new FileReader();
+  reader.onerror=function(){alert('图片读取失败，请重试');closeAddWorkForm();};
+  reader.onload=async function(e){
+    try{
+      const key='img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+      if(!wsState.customImages[cat])wsState.customImages[cat]=[];
+      wsState.customImages[cat].push({key,name,cat});
+      await storeImage(key,e.target.result,cat);
+      saveWorksState();
+      worksData=await buildWorksData();
+      refreshWorksView(cat);
+      renderMarquee();
+      closeAddWorkForm();
+    }catch(err){
+      alert('保存失败：'+(err.message||'图片可能过大')+'\n请使用较小的图片重试');
+      closeAddWorkForm();
+    }
+  };
+  reader.readAsDataURL(fileInput.files[0]);
+}
+
+/* ===== MODAL ===== */
+let modalCat='',modalIndex=0;
+const modalOverlay=document.getElementById('modalOverlay');
+const modalImg=document.getElementById('modalImg');
+function getModalImages(){return worksData[modalCat]||[]}
+function openWorkModal(cat,idx){modalCat=cat;modalIndex=idx;modalImg.src=getModalImages()[idx]?.src||'';modalOverlay.classList.add('open')}
+function closeModal(){modalOverlay.classList.remove('open')}
+function navModal(dir){const imgs=getModalImages();modalIndex=(modalIndex+dir+imgs.length)%imgs.length;modalImg.src=imgs[modalIndex]?.src||''}
+modalOverlay.addEventListener('click',e=>{if(e.target===modalOverlay)closeModal()});
+document.addEventListener('keydown',e=>{
+  if(!modalOverlay.classList.contains('open'))return;
+  if(e.key==='Escape')closeModal();
+  if(e.key==='ArrowLeft')navModal(-1);
+  if(e.key==='ArrowRight')navModal(1);
+});
+
+/* ===== MARQUEE ===== */
+const marqueeTrack=document.getElementById('marqueeTrack');
+
+function renderMarquee(){
+  if(!worksData){marqueeTrack.innerHTML='';return;}
+  const eventItems=worksData['event']||[];
+  const imgs=eventItems.length?eventItems.map(e=>e.src):[];
+  const marqueeImages=[...imgs,...imgs]; // duplicate for seamless loop
+
+  let html=marqueeImages.map((src,i)=>{
+    const origIdx=i%imgs.length;
+    return `
+      <div class="marquee-edit-wrap">
+        <img src="${src}" alt="" loading="lazy" style="height:220px;object-fit:cover;margin-right:5px;">
+        ${editMode&&imgs.length?`
+          <div class="marquee-edit-controls">
+            <button class="marquee-btn marquee-btn-del" onclick="event.stopPropagation();deleteMarqueeImage(${origIdx})" title="删除">×</button>
+            <button class="marquee-btn marquee-btn-replace" onclick="event.stopPropagation();triggerMarqueeReplace(${origIdx})" title="替换">+</button>
+          </div>
+        `:''}
+      </div>`;
+  }).join('');
+
+  if(editMode){
+    html+=`
+      <div class="marquee-edit-wrap marquee-add-btn" onclick="addMarqueeImage()">
+        <div class="marquee-add-placeholder">+</div>
+      </div>`;
+  }
+  marqueeTrack.innerHTML=html;
+}
+
+/* ===== MARQUEE OPERATIONS ===== */
+async function deleteMarqueeImage(idx){
+  if(!confirm('确定删除该图片？'))return;
+  try{
+    const items=worksData['event']||[];
+    const item=items[idx];if(!item)return;
+    if(item.src.startsWith(CONFIG.imagesBase)){
+      const fn=item.src.replace(CONFIG.imagesBase,'');
+      if(!wsState.deletedImages['event'])wsState.deletedImages['event']=[];
+      if(!wsState.deletedImages['event'].includes(fn))wsState.deletedImages['event'].push(fn);
+    }else{
+      const customs=wsState.customImages['event']||[];
+      const ci=customs.findIndex(c=>(c.key&&item.src.includes(c.key))||c.dataUrl===item.src);
+      if(ci!==-1){
+        const meta=customs[ci];
+        if(meta.key)await deleteImage(meta.key);
+        customs.splice(ci,1);
+      }
+    }
+    saveWorksState();
+    worksData=await buildWorksData();
+    renderMarquee();
+  }catch(err){
+    alert('删除失败：'+(err.message||'操作失败，请重试'));
+  }
+}
+
+function triggerMarqueeReplace(idx){
+  const fi=document.createElement('input');
+  fi.type='file';fi.accept='image/*';
+  fi.onchange=function(){replaceMarqueeImage(idx,this)};
+  fi.click();
+}
+
+function replaceMarqueeImage(idx,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const items=worksData['event']||[];
+      const item=items[idx];if(!item)return;
+      const key='img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+      const name=item.name||'活动实拍 新';
+      if(item.src.startsWith(CONFIG.imagesBase)){
+        const fn=item.src.replace(CONFIG.imagesBase,'');
+        if(!wsState.deletedImages['event'])wsState.deletedImages['event']=[];
+        if(!wsState.deletedImages['event'].includes(fn))wsState.deletedImages['event'].push(fn);
+        if(!wsState.customImages['event'])wsState.customImages['event']=[];
+        wsState.customImages['event'].push({key,name,cat:'event'});
+        await storeImage(key,e.target.result,'event');
+      }else{
+        const customs=wsState.customImages['event']||[];
+        const ci=customs.findIndex(c=>(c.key&&item.src.includes(c.key))||c.dataUrl===item.src);
+        if(ci!==-1){
+          const oldKey=customs[ci].key;
+          if(oldKey)await deleteImage(oldKey);
+          customs[ci].key=key;
+          customs[ci].name=name;
+          await storeImage(key,e.target.result,'event');
+        }
+      }
+      saveWorksState();
+      worksData=await buildWorksData();
+      renderMarquee();
+    }catch(err){
+      alert('替换失败：'+(err.message||'存储空间不足，请先删除部分图片后重试'));
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function addMarqueeImage(){
+  const fi=document.createElement('input');
+  fi.type='file';fi.accept='image/*';
+  fi.onchange=function(){
+    const file=this.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=async function(e){
+      try{
+        const key='img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+        if(!wsState.customImages['event'])wsState.customImages['event']=[];
+        wsState.customImages['event'].push({key,name:'活动实拍 新',cat:'event'});
+        await storeImage(key,e.target.result,'event');
+        saveWorksState();
+        worksData=await buildWorksData();
+        renderMarquee();
+      }catch(err){
+        alert('添加失败：'+(err.message||'存储空间不足，请删除部分图片后重试'));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  fi.click();
+}
+
+/* ================================================================
+   SPOTLIGHT — mouse-following radial glow
+   ================================================================ */
+const spotlight=document.getElementById('spotlight');
+let sx=window.innerWidth/2,sy=window.innerHeight/2;
+let curSX=sx,curSY=sy;
+const SP_LERP=0.08;
+
+document.addEventListener('mousemove',e=>{sx=e.clientX;sy=e.clientY;});
+function updateSpotlight(){
+  curSX+=(sx-curSX)*SP_LERP;
+  curSY+=(sy-curSY)*SP_LERP;
+  spotlight.style.left=curSX+'px';
+  spotlight.style.top=curSY+'px';
+  requestAnimationFrame(updateSpotlight);
+}
+requestAnimationFrame(updateSpotlight);
+
+// Fade out when leaving window
+document.addEventListener('mouseleave',()=>spotlight.style.opacity='0');
+document.addEventListener('mouseenter',()=>spotlight.style.opacity='1');
+
+/* ================================================================
+   SKILLS EDIT FUNCTIONS
+   ================================================================ */
+function renderSkills(){
+  const grid=document.getElementById('skillsGrid');
+  let cards=CONFIG.skills.map((sk,i)=>`
+    <div class="skill-card reveal reveal-d${Math.min(i+1,5)}" data-skill-idx="${i}">
+      <button class="skill-btn-del" title="删除此技能" onclick="deleteSkill(${i})">&times;</button>
+      <div class="skill-icon">${sk.iconSvg}</div>
+      <div class="skill-name" ${editMode?'contenteditable="true" spellcheck="false"':''}>${sk.name}</div>
+      <div class="skill-level" ${editMode?'contenteditable="true" spellcheck="false"':''}>${sk.level}</div>
+    </div>
+  `).join('');
+
+  if(editMode){
+    cards+=`
+      <div class="skill-card skill-card-add" onclick="addSkill()">
+        <div class="skill-add-placeholder">
+          <span class="skill-add-icon">+</span>
+          <span class="skill-add-text">添加技能</span>
+        </div>
+      </div>`;
+  }
+
+  grid.innerHTML=cards;
+}
+
+function addSkill(){
+  const name=prompt('技能名称（如 Figma / Photoshop / C4D）');
+  if(!name||!name.trim())return;
+  const level=prompt('熟练程度（如 Expert / Advanced / Intermediate / Beginner）','Advanced');
+  const skillName=name.trim();
+  const skillLevel=(level&&level.trim())||'Advanced';
+
+  // 将添加卡片变为文件选择区域
+  const addCard=document.getElementById('skillsGrid').querySelector('.skill-card-add');
+  if(!addCard)return;
+  addCard.className='skill-card skill-card-add skill-card-pick';
+  addCard.innerHTML=`
+    <div class="skill-add-placeholder">
+      <span class="skill-add-icon">+</span>
+      <span class="skill-add-text">点击选择图标图片</span>
+      <span style="font-size:0.6rem;color:#999;margin-top:0.3rem;display:block">支持 PNG / JPG / WebP / SVG</span>
+      <a href="javascript:void(0)" onclick="event.stopPropagation();cancelSkillAdd(this.parentElement.parentElement)" style="font-size:0.6rem;color:#e74c3c;margin-top:0.5rem;display:inline-block">取消</a>
+    </div>`;
+
+  const fileInput=document.createElement('input');
+  fileInput.type='file';
+  fileInput.accept='image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
+  fileInput.style.cssText='position:absolute;inset:0;opacity:0;cursor:pointer';
+  fileInput._skillName=skillName;
+  fileInput._skillLevel=skillLevel;
+  fileInput.onchange=handleSkillIconPick;
+  addCard.appendChild(fileInput);
+}
+
+function cancelSkillAdd(addCard){
+  // 恢复为默认添加卡片
+  addCard.className='skill-card skill-card-add';
+  addCard.innerHTML=`
+    <div class="skill-add-placeholder" onclick="addSkill()">
+      <span class="skill-add-icon">+</span>
+      <span class="skill-add-text">添加技能</span>
+    </div>`;
+}
+
+function handleSkillIconPick(e){
+  const input=e.target;
+  const name=input._skillName;
+  const level=input._skillLevel;
+  const file=input.files[0];
+
+  if(!file){
+    const addCard=input.parentElement;
+    const defaultSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1 3 3 0 0 1-1.17 2.3A3 3 0 0 0 12 15"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>';
+    CONFIG.skills.push({name,level,iconSvg:defaultSvg});
+    renderSkills();
+    document.querySelectorAll('.skill-icon').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.spellcheck=false;
+    });
+    return;
+  }
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const dataUrl=e.target.result;
+    let iconSvg;
+    if(file.type==='image/svg+xml'){
+      iconSvg=atob(dataUrl.split(',')[1]);
+    }else{
+      iconSvg=`<img src="${dataUrl}" alt="${name}" class="skill-img-icon">`;
+    }
+    CONFIG.skills.push({name,level,iconSvg});
+    renderSkills();
+    document.querySelectorAll('.skill-icon').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.spellcheck=false;
+    });
+  };
+  reader.onerror=function(){
+    alert('图片读取失败，已使用默认SVG图标');
+    const defaultSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1 3 3 0 0 1-1.17 2.3A3 3 0 0 0 12 15"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>';
+    CONFIG.skills.push({name,level,iconSvg:defaultSvg});
+    renderSkills();
+    document.querySelectorAll('.skill-icon').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.spellcheck=false;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteSkill(idx){
+  if(!confirm('确定要删除「'+CONFIG.skills[idx].name+'」？此操作将在保存后生效。'))return;
+  CONFIG.skills.splice(idx,1);
+  renderSkills();
+  // Make icon editable in edit mode
+  document.querySelectorAll('.skill-icon').forEach(el=>{
+    el.setAttribute('contenteditable','true');
+    el.spellcheck=false;
+  });
+}
+
+/* ================================================================
+   EDIT MODE
+   ================================================================ */
+const editToggle=document.getElementById('edit-toggle');
+
+editToggle.addEventListener('click',async ()=>{
+  editMode=!editMode;
+  document.body.classList.toggle('edit-mode',editMode);
+  editToggle.classList.toggle('active',editMode);
+  editToggle.textContent=editMode?'DONE':'EDIT';
+
+  // Invalidate all rendered grids so they re-render with correct editMode
+  worksVersion++;
+  document.querySelectorAll('.works-panel-grid').forEach(g=>{g.dataset.renderedVersion='0'});
+
+  if(editMode){
+    // Make text elements editable
+    document.querySelectorAll('[data-config]').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.spellcheck=false;
+    });
+
+    // Re-render skills with edit controls
+    renderSkills();
+    document.querySelectorAll('.skill-icon').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.spellcheck=false;
+    });
+
+    // Make exp cards editable
+    document.querySelectorAll('.exp-card-header h3,.exp-role,.exp-date,.exp-card-body-inner li').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.spellcheck=false;
+    });
+    // Re-render works and marquee with edit controls
+    buildPanelsHTML();
+    if(expandedCat)renderPanelWorks(expandedCat);
+    updatePanelCounts();
+    attachPanelDragListeners();
+    renderMarquee();
+
+    // Make category panel names editable
+    document.querySelectorAll('.works-panel-cat-name').forEach(el=>{
+      el.setAttribute('contenteditable','true');
+      el.spellcheck=false;
+    });
+  }else{
+    // Save changes
+    document.querySelectorAll('[contenteditable="true"]').forEach(el=>{
+      el.removeAttribute('contenteditable');
+    });
+
+    // Deep-clone CONFIG as fallback in case save fails mid-way
+    const CONFIG_BACKUP=JSON.parse(JSON.stringify(CONFIG));
+
+    // Collect ALL changes back to CONFIG
+    const nc={};
+
+    // Hero
+    const nameEl=document.querySelector('[data-config="name"]');
+    if(nameEl)nc.name=nameEl.textContent.trim();
+    const titleEl=document.querySelector('[data-config="title"]');
+    if(titleEl)nc.title=titleEl.textContent.trim();
+    const logoEl=document.getElementById('logo-text');
+    if(logoEl)nc.logoText=logoEl.textContent.trim();
+
+    // About
+    const aboutH=document.querySelector('[data-config="aboutHeading"]');
+    if(aboutH)nc.aboutHeading=aboutH.innerHTML;
+    const aboutP1=document.querySelector('[data-config="aboutP1"]');
+    if(aboutP1)nc.aboutP1=aboutP1.textContent.trim();
+    const aboutP2=document.querySelector('[data-config="aboutP2"]');
+    if(aboutP2)nc.aboutP2=aboutP2.textContent.trim();
+
+    // Stats
+    nc.stats=[];
+    document.querySelectorAll('[data-config^="stat"]').forEach(el=>{
+      const v=el.textContent.trim(),l=el.nextElementSibling?el.nextElementSibling.textContent.trim():'';
+      if(v||l)nc.stats.push({value:v,label:l});
+    });
+
+    // Section headings
+    const sh=document.querySelector('[data-config="skillsHeading"]');
+    if(sh)nc.skillsHeading=sh.textContent.trim();
+    const eh=document.querySelector('[data-config="expHeading"]');
+    if(eh)nc.expHeading=eh.textContent.trim();
+    const mh=document.querySelector('[data-config="marqueeHeading"]');
+    if(mh)nc.marqueeHeading=mh.textContent.trim();
+    const wh=document.querySelector('[data-config="worksHeading"]');
+    if(wh)nc.worksHeading=wh.textContent.trim();
+    const ch=document.querySelector('[data-config="contactHeading"]');
+    if(ch)nc.contactHeading=ch.textContent.trim();
+    const cd=document.querySelector('[data-config="contactDesc"]');
+    if(cd)nc.contactDesc=cd.textContent.trim();
+
+    // Skills
+    nc.skills=[];
+    document.querySelectorAll('.skill-card').forEach(card=>{
+      const sn=card.querySelector('.skill-name');
+      const sl=card.querySelector('.skill-level');
+      const si=card.querySelector('.skill-icon');
+      if(sn&&sl)nc.skills.push({name:sn.textContent.trim(),level:sl.textContent.trim(),iconSvg:si?si.innerHTML:''});
+    });
+
+    // Experience
+    nc.experience=[];
+    document.querySelectorAll('.exp-card').forEach(card=>{
+      const h3=card.querySelector('.exp-card-header h3');
+      const role=card.querySelector('.exp-role');
+      const date=card.querySelector('.exp-date');
+      const logo=card.querySelector('.exp-logo');
+      const lis=card.querySelectorAll('.exp-card-body-inner li');
+      if(h3&&role&&date){
+        nc.experience.push({company:h3.textContent.trim(),role:role.textContent.trim(),date:date.textContent.trim(),logo:logo?logo.getAttribute('src'):undefined,details:Array.from(lis).map(li=>li.textContent.trim())});
+      }
+    });
+
+    // Contact
+    const phoneEl=document.querySelector('[data-config="phone"]');
+    if(phoneEl)nc.phone=phoneEl.textContent.trim();
+    const emailEl=document.querySelector('[data-config="email"]');
+    if(emailEl)nc.email=emailEl.textContent.trim();
+    const locEl=document.querySelector('[data-config="location"]');
+    if(locEl)nc.location=locEl.textContent.trim();
+    const ctaEl=document.querySelector('[data-config="ctaText"]');
+    if(ctaEl)nc.ctaText=ctaEl.textContent.trim();
+
+    // === VALIDATION: allow empty arrays, only fallback if undefined ===
+    if(nc.skills===undefined){nc.skills=CONFIG_BACKUP.skills;console.warn('[SAVE] skills undefined, keeping backup');}
+    if(nc.experience===undefined){nc.experience=CONFIG_BACKUP.experience;console.warn('[SAVE] experience undefined, keeping backup');}
+    if(nc.stats===undefined){nc.stats=CONFIG_BACKUP.stats;console.warn('[SAVE] stats undefined, keeping backup');}
+    // Strip empty-string keys that would overwrite CONFIG defaults with nothing
+    for(const k of Object.keys(nc)){
+      if(nc[k]===undefined||(typeof nc[k]==='string'&&!nc[k])){delete nc[k];console.warn('[SAVE] dropping empty key:',k);}
+    }
+
+    Object.assign(CONFIG,nc);
+    try{
+      // 合并已有保存数据，避免覆盖之前保存的其他字段
+      let existing={};
+      try{const prev=localStorage.getItem('portfolio_v2');if(prev)existing=JSON.parse(prev);}catch(_){}
+      const merged={...existing,...nc};
+      localStorage.setItem('portfolio_v2',JSON.stringify(merged));
+      // Verify the save round-trips
+      const verify=localStorage.getItem('portfolio_v2');
+      if(!verify){throw new Error('save verify failed');}
+    }catch(e){
+      // Restore CONFIG from backup and abort
+      console.error('[SAVE] write failed, restoring backup:',e);
+      Object.assign(CONFIG,CONFIG_BACKUP);
+      editMode=false;
+      document.body.classList.remove('edit-mode');
+      editToggle.classList.remove('active');
+      editToggle.textContent='EDIT';
+      populatePage();
+      renderWorks();
+      renderMarquee();
+      return;
+    }
+
+    // Save category names
+    const catNames={};
+    document.querySelectorAll('.works-panel').forEach(panel=>{
+      const key=panel.dataset.cat;
+      const nameEl=panel.querySelector('.works-panel-cat-name');
+      if(key&&key!=='all'&&nameEl)catNames[key]=nameEl.textContent.trim();
+    });
+    Object.assign(CATEGORIES,catNames);
+    try{localStorage.setItem('portfolio_categories',JSON.stringify(catNames));}catch(e){}
+
+    // Collect works grid captions and save workspace state
+    document.querySelectorAll('.works-panel-grid [data-field="name"]').forEach(el=>{
+      const cat=el.dataset.cat;
+      const itemId=el.dataset.id;
+      if(cat&&itemId){
+        if(itemId.startsWith('native:')){
+          const origIdx=parseInt(itemId.replace('native:',''));
+          if(!wsState.captions[cat])wsState.captions[cat]={};
+          wsState.captions[cat][String(origIdx)]=el.textContent.trim();
+        }else if(itemId.startsWith('custom:')){
+          const key=itemId.replace('custom:','');
+          const customs=wsState.customImages[cat]||[];
+          const ci=customs.findIndex(c=>c.key===key);
+          if(ci!==-1)customs[ci].name=el.textContent.trim();
+        }
+      }
+    });
+    try{saveWorksState();}catch(e){console.warn('[SAVE] workspace save failed:',e);}
+
+    // Rebuild and sync
+    try{
+      worksData=await buildWorksData();
+    }catch(e){
+      console.warn('[SAVE] buildWorksData failed, using current data:',e);
+    }
+    populatePage();
+    buildPanelsHTML();
+    if(expandedCat)renderPanelWorks(expandedCat);
+    updatePanelCounts();
+    renderMarquee();
+  }
+});
+
+/* ===== EXPORT ALL IMAGES ===== */
+const exportBtn=document.getElementById('export-btn');
+exportBtn.addEventListener('click',async()=>{
+  exportBtn.textContent='读取中...';
+  exportBtn.style.opacity='0.85';
+  try{
+    await initDB();
+    const items=await new Promise((res,rej)=>{
+      const tx=db.transaction(['images'],'readonly');
+      const all=tx.objectStore('images').getAll();
+      all.onsuccess=()=>res(all.result);
+      all.onerror=()=>rej(all.error);
+    });
+    if(!items.length){alert('数据库中没有图片');exportBtn.textContent='导出图片';exportBtn.style.opacity='';return}
+    const dir=await window.showDirectoryPicker();
+    let ok=0;
+    for(const item of items){
+      try{
+        const blob=await(await fetch(item.dataUrl)).blob();
+        const fh=await dir.getFileHandle(item.key+'.png',{create:true});
+        const w=await fh.createWritable();
+        await w.write(blob);
+        await w.close();
+        ok++;
+      }catch(e){console.warn('导出失败:',item.key,e)}
+    }
+    alert('完成！成功导出 '+ok+'/'+items.length+' 张图片。');
+  }catch(e){if(e.name!=='AbortError')alert('导出失败: '+e.message)}
+  exportBtn.textContent='导出图片';
+  exportBtn.style.opacity='';
+});
+</script>
+</body>
+</html>
