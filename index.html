@@ -797,7 +797,14 @@ function getImage(key){
 
 /* ===== BUILD IMAGE DATA ===== */
 async function buildWorksData(){
-  try{await initDB()}catch(e){/* IndexedDB unavailable — custom images will be skipped gracefully */}
+  let idxFallback=false;
+  try{await initDB()}catch(e){idxFallback=true;/* IndexedDB unavailable — custom images will be skipped gracefully */}
+  // Fallback: when IndexedDB is unavailable, remap logo→字体logo设计, illustration→手绘厚涂
+  if(idxFallback&&!wsState._fallbackMapped){
+    wsState._fallbackMapped=true;
+    wsState._nativeRemap={'字体logo设计':'logo','手绘厚涂':'illustration'};
+    wsState._nativeHide=['logo','illustration'];
+  }
   const allImages=[];
   const wd={};
   // Process ALL categories (built-in + custom), not just catImages
@@ -822,11 +829,15 @@ async function buildWorksData(){
       const results=await Promise.all(promises);
       for(const r of results)if(r)customs.push(r);
     }
-    // Handle custom categories that have no native images
-    const nativeImages=(catImages[cat]||[])
+    // Handle native images (with IndexedDB-unavailable fallback remap)
+    let nativeCat=cat;
+    if(idxFallback&&wsState._nativeRemap&&wsState._nativeRemap[cat])nativeCat=wsState._nativeRemap[cat];
+    if(idxFallback&&wsState._nativeHide&&wsState._nativeHide.includes(cat))nativeCat=null;
+    const srcImgs=nativeCat?catImages[nativeCat]||[]:[];
+    const nativeImages=srcImgs
       .map((fn,origIdx)=>({fn,origIdx}))
       .filter(({fn})=>!delSet.has(fn))
-      .map(({fn,origIdx})=>({id:'native:'+origIdx,src:CONFIG.imagesBase+fn,name:captions[String(origIdx)]||(CATEGORIES[cat]+' '+(origIdx+1)),cat}));
+      .map(({fn,origIdx})=>({id:'native:'+nativeCat+'_'+origIdx,src:CONFIG.imagesBase+fn,name:captions[String(origIdx)]||(CATEGORIES[cat]+' '+(origIdx+1)),cat}));
     const merged=[...nativeImages,...customs];
     // Apply saved order if available
     if(order.length){
