@@ -1963,7 +1963,52 @@ editToggle.addEventListener('click',async ()=>{
 });
 
 /* ===== EXPORT ALL IMAGES ===== */
+const EXPORT_SERVER='http://127.0.0.1:18765';
 const exportBtn=document.getElementById('export-btn');
+const exportStatus=document.getElementById('export-status')||(()=>{
+  const el=document.createElement('span');
+  el.id='export-status';el.style.cssText='font-size:0.72rem;color:#888;margin-left:0.5rem';
+  exportBtn.parentNode.appendChild(el);return el;
+})();
+
+async function exportViaServer(items){
+  exportStatus.textContent='0/'+items.length;
+  let ok=0;
+  for(const item of items){
+    try{
+      const resp=await fetch(EXPORT_SERVER,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({key:item.key,dataUrl:item.dataUrl})
+      });
+      const r=await resp.json();
+      if(r.ok)ok++; else console.warn('服务器拒绝:',item.key,r.error);
+    }catch(e){console.warn('导出失败:',item.key,e)}
+    exportStatus.textContent=ok+'/'+items.length;
+  }
+  exportBtn.textContent='导出图片';
+  exportBtn.style.opacity='';
+  exportStatus.textContent='完成! '+ok+'/'+items.length;
+  if(ok<items.length)alert('完成！成功导出 '+ok+'/'+items.length+' 张图片。');
+}
+
+async function exportViaPicker(items){
+  const dir=await window.showDirectoryPicker();
+  let ok=0;
+  for(const item of items){
+    try{
+      const blob=await(await fetch(item.dataUrl)).blob();
+      const fh=await dir.getFileHandle(item.key+'.png',{create:true});
+      const w=await fh.createWritable();
+      await w.write(blob);
+      await w.close();
+      ok++;
+    }catch(e){console.warn('导出失败:',item.key,e)}
+  }
+  alert('完成！成功导出 '+ok+'/'+items.length+' 张图片。');
+  exportBtn.textContent='导出图片';
+  exportBtn.style.opacity='';
+}
+
 exportBtn.addEventListener('click',async()=>{
   exportBtn.textContent='读取中...';
   exportBtn.style.opacity='0.85';
@@ -1976,22 +2021,16 @@ exportBtn.addEventListener('click',async()=>{
       all.onerror=()=>rej(all.error);
     });
     if(!items.length){alert('数据库中没有图片');exportBtn.textContent='导出图片';exportBtn.style.opacity='';return}
-    const dir=await window.showDirectoryPicker();
-    let ok=0;
-    for(const item of items){
-      try{
-        const blob=await(await fetch(item.dataUrl)).blob();
-        const fh=await dir.getFileHandle(item.key+'.png',{create:true});
-        const w=await fh.createWritable();
-        await w.write(blob);
-        await w.close();
-        ok++;
-      }catch(e){console.warn('导出失败:',item.key,e)}
+    exportBtn.textContent='导出中...';
+    if(window.showDirectoryPicker){
+      try{await exportViaPicker(items);return;}catch(e){
+        if(e.name==='AbortError'){exportBtn.textContent='导出图片';exportBtn.style.opacity='';return}
+        console.warn('showDirectoryPicker 失败，降级 HTTP 导出:',e);
+        exportBtn.textContent='导出中...';
+      }
     }
-    alert('完成！成功导出 '+ok+'/'+items.length+' 张图片。');
-  }catch(e){if(e.name!=='AbortError')alert('导出失败: '+e.message)}
-  exportBtn.textContent='导出图片';
-  exportBtn.style.opacity='';
+    await exportViaServer(items);
+  }catch(e){exportBtn.textContent='导出图片';exportBtn.style.opacity='';}
 });
 
 // === AUTO-EXPORT: 一键导出 wsState + IndexedDB 图片 ===
@@ -2012,14 +2051,17 @@ exportBtn.addEventListener('click',async()=>{
   a.click();
   URL.revokeObjectURL(a.href);
 
-  // 2) export IndexedDB images via showDirectoryPicker
+  // 2) export IndexedDB images (read actual blob via getImage from DB)
   if(!window.showDirectoryPicker){console.warn('[autoExport] showDirectoryPicker not supported'); return;}
   try{
+    await initDB();
     const dir=await window.showDirectoryPicker({mode:'readwrite'});
     let ok=0;
     for(const item of items){
       try{
-        const blob=await(await fetch(item.dataUrl)).blob();
+        const dataUrl=await getImage(item.key);
+        if(!dataUrl){console.warn('[autoExport] no data:',item.key); continue;}
+        const blob=await(await fetch(dataUrl)).blob();
         const fh=await dir.getFileHandle(item.key+'.png',{create:true});
         const w=await fh.createWritable();
         await w.write(blob);
