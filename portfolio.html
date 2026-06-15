@@ -2036,45 +2036,6 @@ exportBtn.addEventListener('click',async()=>{
   }catch(e){exportBtn.textContent='导出图片';exportBtn.style.opacity='';}
 });
 
-// === AUTO-EXPORT: 一键导出 wsState + IndexedDB 图片 ===
-(async function autoExport(){
-  const ws=JSON.parse(localStorage.portfolio_works_v2||'{}');
-  const custom=ws.customImages||{};
-  const items=[];
-  for(const [key,entry] of Object.entries(custom)){
-    items.push({key, dataUrl:entry.dataUrl||entry.url||'', cat:entry.cat||'', title:entry.title||''});
-  }
-  if(!items.length){console.log('[autoExport] no custom images to export'); return;}
-
-  // 1) download wsState JSON
-  const wsBlob=new Blob([JSON.stringify(ws,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(wsBlob);
-  a.download='portfolio_wsState.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-
-  // 2) export IndexedDB images (read actual blob via getImage from DB)
-  if(!window.showDirectoryPicker){console.warn('[autoExport] showDirectoryPicker not supported'); return;}
-  try{
-    await initDB();
-    const dir=await window.showDirectoryPicker({mode:'readwrite'});
-    let ok=0;
-    for(const item of items){
-      try{
-        const dataUrl=await getImage(item.key);
-        if(!dataUrl){console.warn('[autoExport] no data:',item.key); continue;}
-        const blob=await(await fetch(dataUrl)).blob();
-        const fh=await dir.getFileHandle(item.key+'.png',{create:true});
-        const w=await fh.createWritable();
-        await w.write(blob);
-        await w.close();
-        ok++;
-      }catch(e){console.warn('[autoExport] failed:',item.key,e);}
-    }
-    alert('完成！wsState已下载，图片已导出 '+ok+'/'+items.length+' 张。请勿关闭此页面，把导出的 wsState JSON 和图片文件夹一起发给我。');
-  }catch(e){if(e.name!=='AbortError')alert('导出失败: '+e.message);}
-})();
 </script>
 </body>
 </html>
