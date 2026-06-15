@@ -1492,6 +1492,14 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight')navModal(1);
 });
 
+// Secret edit mode trigger: Cmd+Shift+E (or Ctrl+Shift+E)
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key.toLowerCase()==='e'){
+    e.preventDefault();
+    if(!editMode)tryEnterEditMode();
+  }
+});
+
 /* ===== MARQUEE ===== */
 const marqueeTrack=document.getElementById('marqueeTrack');
 
@@ -1770,6 +1778,27 @@ function deleteSkill(idx){
    ================================================================ */
 const editToggle=document.getElementById('edit-toggle');
 
+// Password gate: hide EDIT button from public, require password to enter edit mode
+editToggle.style.display='none';
+
+function tryEnterEditMode(){
+  const pw=prompt('请输入编辑密码：');
+  if(pw==='lyj2025'){
+    editMode=true;
+    document.body.classList.add('edit-mode');
+    editToggle.style.display='';
+    editToggle.classList.add('active');
+    editToggle.textContent='DONE';
+    worksVersion++;
+    document.querySelectorAll('.works-panel-grid').forEach(g=>{g.dataset.renderedVersion='0'});
+    document.querySelectorAll('[data-config]').forEach(el=>{el.setAttribute('contenteditable','true');el.spellcheck=false;});
+    if(expandedCat)renderPanelWorks(expandedCat); else renderWorks();
+    updatePanelCounts();
+  }else if(pw!==null){
+    alert('密码错误');
+  }
+}
+
 editToggle.addEventListener('click',async ()=>{
   editMode=!editMode;
   document.body.classList.toggle('edit-mode',editMode);
@@ -1918,6 +1947,7 @@ editToggle.addEventListener('click',async ()=>{
       editMode=false;
       document.body.classList.remove('edit-mode');
       editToggle.classList.remove('active');
+      editToggle.style.display='none';
       editToggle.textContent='EDIT';
       populatePage();
       renderWorks();
@@ -1965,6 +1995,7 @@ editToggle.addEventListener('click',async ()=>{
     if(expandedCat)renderPanelWorks(expandedCat);
     updatePanelCounts();
     renderMarquee();
+    editToggle.style.display='none';
   }
 });
 
